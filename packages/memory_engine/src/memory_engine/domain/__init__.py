@@ -1,5 +1,10 @@
 """Domain layer for Temporal Memory Engine."""
 
+from memory_engine.domain.clock import (
+    Clock,
+    FixedClock,
+    SystemClock,
+)
 from memory_engine.domain.enums import (
     Cardinality,
     DecayClass,
@@ -52,10 +57,15 @@ from memory_engine.domain.ids import (
     SourceId,
     UserId,
 )
+from memory_engine.domain.intervals import (
+    TimeInterval,
+    TimePoint,
+)
 
 __all__ = [
     'AllLanesFailed',
     'Cardinality',
+    'Clock',
     'ConfigError',
     'ConstraintViolation',
     'DecayClass',
@@ -67,6 +77,7 @@ __all__ = [
     'FactId',
     'FactOrigin',
     'FactStatus',
+    'FixedClock',
     'Forbidden',
     'IngestionError',
     'Intent',
@@ -95,6 +106,9 @@ __all__ = [
     'StateConflict',
     'StorageError',
     'StreamInterrupted',
+    'SystemClock',
+    'TimeInterval',
+    'TimePoint',
     'TimePrecision',
     'TransientStorageError',
     'Unauthorized',
