@@ -3,7 +3,7 @@
 Complete tasks strictly in order. One task = One Git commit. Never start a task until the previous task is `[x]` and `make check` passes.
 
 ## Milestone M0: Skeleton, Domain & Ports
-- [ ] **M0-01**: Create folder layout per `docs/LLD.md` Section 2.2 (`packages/memory_engine/src/memory_engine/...`, `apps/`, `eval/`, `tests/`). Add empty `__init__.py` files and verify `make check` runs cleanly.
+- [x] **M0-01**: Create folder layout per `docs/LLD.md` Section 2.2 (`packages/memory_engine/src/memory_engine/...`, `apps/`, `eval/`, `tests/`). Add empty `__init__.py` files and verify `make check` runs cleanly.
 - [ ] **M0-02**: Implement `domain/ids.py`, `domain/enums.py` (LLD Section 4.3, 5.1) and `domain/errors.py` (LLD Section 17.1). Add unit tests in `tests/unit/test_domain_primitives.py`.
 - [ ] **M0-03**: Implement `domain/intervals.py` (`TimeInterval`, `TimePoint` per LLD Section 5.2) and `ports/clock.py` (`Clock`, `SystemClock`, `FixedClock` per LLD Section 4.1, 5.2). Add unit tests for UTC enforcement and half-open interval overlap/contains.
 - [ ] **M0-04**: Implement `domain/models.py` (`Source`, `Entity`, `Predicate`, `Fact`, `FactEvidence`, `FactRelation`, `Job`, `Message`, `ExtractedFact`, `ExtractionResult`, `Candidate` per LLD Section 5.3, 5.4, 5.7). Add unit tests verifying invariants I-1 to I-9.
