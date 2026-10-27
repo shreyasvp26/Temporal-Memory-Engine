@@ -261,12 +261,21 @@ class TemporalFilter:
 
         return TemporalFilter(mode=FilterMode.CURRENT)
 
-    def to_sql(self, alias: str, first_param: int) -> SqlFragment:
+    def to_sql(
+        self,
+        alias: str | int = 'f',
+        first_param: int | str = 1,
+    ) -> SqlFragment:
+        if isinstance(alias, int) and isinstance(first_param, str):
+            alias, first_param = first_param, alias
+        first_param_int = int(first_param)
+        alias_str = str(alias)
+
         if self.mode == FilterMode.CURRENT:
             return SqlFragment(
                 sql=(
-                    f"{alias}.status = 'active' and {alias}.valid_to is null "
-                    f'and {alias}.invalidated_at is null'
+                    f"{alias_str}.status = 'active' and {alias_str}.valid_to is null "
+                    f'and {alias_str}.invalidated_at is null'
                 ),
                 params=(),
             )
@@ -276,25 +285,28 @@ class TemporalFilter:
                 raise InvariantViolation('as_of must be provided for AS_OF filter mode')
             return SqlFragment(
                 sql=(
-                    f"{alias}.status in ('active','archived') "
-                    f'and {alias}.valid_from <= ${first_param} '
-                    f'and ({alias}.valid_to is null or ${first_param} < {alias}.valid_to)'
+                    f"{alias_str}.status in ('active','archived') "
+                    f'and {alias_str}.valid_from <= ${first_param_int} '
+                    f'and ({alias_str}.valid_to is null or '
+                    f'${first_param_int} < {alias_str}.valid_to)'
                 ),
                 params=(self.as_of,),
             )
 
         if self.mode == FilterMode.OVERLAP:
-            clauses = [f"{alias}.status in ('active','archived')"]
+            clauses = [f"{alias_str}.status in ('active','archived')"]
             params_list: list[Any] = []
-            curr_param = first_param
+            curr_param = first_param_int
 
             if self.range is not None and self.range.end is not None:
-                clauses.append(f'{alias}.valid_from < ${curr_param}')
+                clauses.append(f'{alias_str}.valid_from < ${curr_param}')
                 params_list.append(self.range.end)
                 curr_param += 1
 
             if self.range is not None and self.range.start is not None:
-                clauses.append(f'({alias}.valid_to is null or {alias}.valid_to > ${curr_param})')
+                clauses.append(
+                    f'({alias_str}.valid_to is null or {alias_str}.valid_to > ${curr_param})'
+                )
                 params_list.append(self.range.start)
                 curr_param += 1
 
@@ -305,7 +317,7 @@ class TemporalFilter:
 
         if self.mode == FilterMode.ANY_HISTORY:
             return SqlFragment(
-                sql=f"{alias}.status in ('active','archived')",
+                sql=f"{alias_str}.status in ('active','archived')",
                 params=(),
             )
 
@@ -313,13 +325,13 @@ class TemporalFilter:
             if self.cutoff is not None:
                 return SqlFragment(
                     sql=(
-                        f"{alias}.status = 'active' and ({alias}.valid_to is null "
-                        f'or {alias}.valid_to > ${first_param})'
+                        f"{alias_str}.status = 'active' and ({alias_str}.valid_to is null "
+                        f'or {alias_str}.valid_to > ${first_param_int})'
                     ),
                     params=(self.cutoff,),
                 )
             return SqlFragment(
-                sql=f"{alias}.status = 'active' and {alias}.valid_to is null",
+                sql=f"{alias_str}.status = 'active' and {alias_str}.valid_to is null",
                 params=(),
             )
 

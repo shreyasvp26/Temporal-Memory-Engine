@@ -1,5 +1,17 @@
 """Database adapters, connection pooling, and Unit of Work."""
 
+from memory_engine.db import mappers, sql
+from memory_engine.db.mappers import (
+    map_entity,
+    map_evidence_snippet,
+    map_fact,
+    map_job,
+    map_message,
+    map_predicate,
+    map_scored_fact,
+    map_scored_source,
+    map_source,
+)
 from memory_engine.db.migrate import (
     ADVISORY_LOCK_ID,
     EXPECTED_SCHEMA_VERSION,
@@ -20,6 +32,10 @@ from memory_engine.db.pool import (
     init_connection,
     translate_pg_error,
     wrap_db_errors,
+)
+from memory_engine.db.sql import (
+    inject_temporal_filter,
+    inject_temporal_fragment,
 )
 from memory_engine.db.tx import (
     LOCK_USER_ADVISORY_SQL,
@@ -58,9 +74,22 @@ __all__ = [
     'create_worker_pool',
     'get_active_uow',
     'init_connection',
+    'inject_temporal_filter',
+    'inject_temporal_fragment',
     'load_migration_files',
+    'map_entity',
+    'map_evidence_snippet',
+    'map_fact',
+    'map_job',
+    'map_message',
+    'map_predicate',
+    'map_scored_fact',
+    'map_scored_source',
+    'map_source',
+    'mappers',
     'register_repo_factory',
     'set_transaction_user',
+    'sql',
     'transaction_scope',
     'translate_pg_error',
     'verify_applied_checksums',
