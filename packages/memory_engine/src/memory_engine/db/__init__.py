@@ -1,5 +1,17 @@
-"""Database adapters and migration utilities."""
+"""Database adapters, connection pooling, and Unit of Work."""
 
+from memory_engine.db import mappers, sql
+from memory_engine.db.mappers import (
+    map_entity,
+    map_evidence_snippet,
+    map_fact,
+    map_job,
+    map_message,
+    map_predicate,
+    map_scored_fact,
+    map_scored_source,
+    map_source,
+)
 from memory_engine.db.migrate import (
     ADVISORY_LOCK_ID,
     EXPECTED_SCHEMA_VERSION,
@@ -11,15 +23,94 @@ from memory_engine.db.migrate import (
     verify_applied_checksums,
     verify_startup_guard,
 )
+from memory_engine.db.pool import (
+    create_api_pool,
+    create_db_pool,
+    create_eval_pool,
+    create_pool,
+    create_worker_pool,
+    init_connection,
+    translate_pg_error,
+    wrap_db_errors,
+)
+from memory_engine.db.repos import (
+    SEED_PREDICATES,
+    PostgresAuditRepository,
+    PostgresEntityRepository,
+    PostgresMessageRepository,
+    PostgresPredicateRegistry,
+    PostgresProfileRepository,
+    PostgresSourceRepository,
+    StaticPredicateRegistry,
+)
+from memory_engine.db.sql import (
+    inject_temporal_filter,
+    inject_temporal_fragment,
+)
+from memory_engine.db.tx import (
+    LOCK_USER_ADVISORY_SQL,
+    SET_APP_USER_ID_SQL,
+    SET_LOCK_TIMEOUT_SQL,
+    acquire_user_advisory_lock,
+    set_transaction_user,
+    transaction_scope,
+)
+from memory_engine.db.uow import (
+    PostgresUnitOfWork,
+    PostgresUnitOfWorkFactory,
+    clear_repo_factories,
+    get_active_uow,
+    register_repo_factory,
+)
 
 __all__ = [
     'ADVISORY_LOCK_ID',
     'EXPECTED_SCHEMA_VERSION',
     'AsyncConnection',
+    'LOCK_USER_ADVISORY_SQL',
     'MigrationFile',
+    'PostgresAuditRepository',
+    'PostgresEntityRepository',
+    'PostgresMessageRepository',
+    'PostgresPredicateRegistry',
+    'PostgresProfileRepository',
+    'PostgresSourceRepository',
+    'PostgresUnitOfWork',
+    'PostgresUnitOfWorkFactory',
+    'SEED_PREDICATES',
+    'SET_APP_USER_ID_SQL',
+    'SET_LOCK_TIMEOUT_SQL',
+    'StaticPredicateRegistry',
+    'acquire_user_advisory_lock',
     'apply_migrations',
+    'clear_repo_factories',
     'compute_checksum',
+    'create_api_pool',
+    'create_db_pool',
+    'create_eval_pool',
+    'create_pool',
+    'create_worker_pool',
+    'get_active_uow',
+    'init_connection',
+    'inject_temporal_filter',
+    'inject_temporal_fragment',
     'load_migration_files',
+    'map_entity',
+    'map_evidence_snippet',
+    'map_fact',
+    'map_job',
+    'map_message',
+    'map_predicate',
+    'map_scored_fact',
+    'map_scored_source',
+    'map_source',
+    'mappers',
+    'register_repo_factory',
+    'set_transaction_user',
+    'sql',
+    'transaction_scope',
+    'translate_pg_error',
     'verify_applied_checksums',
     'verify_startup_guard',
+    'wrap_db_errors',
 ]
