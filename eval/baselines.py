@@ -109,6 +109,11 @@ class EvalSession:
     ts: datetime
     turns: tuple[EvalTurn, ...]
 
+    @property
+    def timestamp(self) -> datetime:
+        """Alias for session timestamp."""
+        return self.ts
+
 
 @dataclass(frozen=True, slots=True)
 class EvalCase:
