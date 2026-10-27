@@ -7,7 +7,8 @@ lint:
 	uv run ruff format --check .
 
 typecheck:
-	uv run mypy packages/memory_engine/src
+	uv run mypy packages/memory_engine/src apps eval tests
+
 
 imports:
 	uv run lint-imports

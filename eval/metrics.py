@@ -105,9 +105,9 @@ def _percentile(sorted_vals: Sequence[float], p: float) -> float:
     f = math.floor(k)
     c = math.ceil(k)
     if f == c:
-        return float(sorted_vals[int(k)])
-    d0 = sorted_vals[int(f)] * (c - k)
-    d1 = sorted_vals[int(c)] * (k - f)
+        return float(sorted_vals[f])
+    d0 = sorted_vals[f] * (c - k)
+    d1 = sorted_vals[c] * (k - f)
     return float(d0 + d1)
 
 

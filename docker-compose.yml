@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: second-brain-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-second_brain}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ops/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ./packages/memory_engine/src/memory_engine/db/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d second_brain"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: second-brain-api
+    restart: unless-stopped
+    command: ["api"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      SB_ENV: ${SB_ENV:-dev}
+      SB_DATABASE_URL_API: postgresql://app_api:api_pass@postgres:5432/second_brain
+      SB_JWT_MODE: ${SB_JWT_MODE:-hs256}
+      SB_JWT_SECRET: ${SB_JWT_SECRET:-dev_jwt_secret_must_be_32_bytes_long_1234}
+      SB_JWT_AUDIENCE: ${SB_JWT_AUDIENCE:-authenticated}
+      SB_WEB_ORIGIN: ${SB_WEB_ORIGIN:-http://localhost:3000}
+      SB_LOCAL_ONLY: ${SB_LOCAL_ONLY:-true}
+      SB_LOG_LEVEL: ${SB_LOG_LEVEL:-INFO}
+      SB_LOG_CONTENT: ${SB_LOG_CONTENT:-false}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: second-brain-worker
+    restart: unless-stopped
+    command: ["worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SB_ENV: ${SB_ENV:-dev}
+      SB_DATABASE_URL_WORKER: postgresql://app_worker:worker_pass@postgres:5432/second_brain
+      SB_DATABASE_URL_API: postgresql://app_api:api_pass@postgres:5432/second_brain
+      SB_LOCAL_ONLY: ${SB_LOCAL_ONLY:-true}
+      SB_LOG_LEVEL: ${SB_LOG_LEVEL:-INFO}
+
+volumes:
+  pgdata:
