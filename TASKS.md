@@ -19,7 +19,7 @@ Complete tasks strictly in order. One task = One Git commit. Never start a task 
 - [x] **M2-05**: Implement `retrieve/fusion.py` (`RrfFuser`), `retrieve/decay.py` (`DecayScorer`), `retrieve/assembler.py` (`ContextAssembler`), and `retrieve/abstain.py` (`AbstentionPolicy`) per LLD Section 9.4–9.6.
 
 ## Milestone M3: PostgreSQL Persistence, SQL Catalog & LLM/Embedder Adapters
-- [ ] **M3-01**: Implement `db/pool.py`, `db/tx.py`, and `db/uow.py` (`PostgresUnitOfWork` & `PostgresUnitOfWorkFactory` with `SET LOCAL app.user_id`, `lock_user` advisory lock, and vector codec registration per LLD Section 6.5, 6.7). Add unit tests with mock/fake asyncpg connections.
+- [x] **M3-01**: Implement `db/pool.py`, `db/tx.py`, and `db/uow.py` (`PostgresUnitOfWork` & `PostgresUnitOfWorkFactory` with `SET LOCAL app.user_id`, `lock_user` advisory lock, and vector codec registration per LLD Section 6.5, 6.7). Add unit tests with mock/fake asyncpg connections.
 - [ ] **M3-02**: Implement `db/sql.py` containing all frozen SQL queries `Q-01` through `Q-18` (including CR-01, CR-02, CR-03 updates from LLD Section 6.8) and row-to-domain hydration helpers in `db/mappers.py`.
 - [ ] **M3-03**: Implement `db/repos/sources.py`, `db/repos/entities.py`, `db/repos/predicates.py`, `db/repos/messages.py`, `db/repos/audit.py`, and `db/repos/profile.py` (LLD Section 6.6, 6.8). Add unit tests verifying SQL parameter binding and row mapping.
 - [ ] **M3-04**: Implement `db/repos/facts.py`, `db/repos/search.py` (with `SET LOCAL hnsw.iterative_scan = 'relaxed_order'`), and `db/repos/jobs.py` (outbox claim `Q-01`, heartbeat `Q-02`, complete/fail `Q-03`, coalesced upsert `Q-04` per LLD Section 6.6, 6.8).
