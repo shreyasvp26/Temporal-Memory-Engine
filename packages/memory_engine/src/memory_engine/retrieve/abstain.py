@@ -29,6 +29,10 @@ class AbstentionDecision:
     def abstained(self) -> bool:
         return self.should_abstain
 
+    @property
+    def canned_response(self) -> str:
+        return self.reply or DEFAULT_ABSTAIN_REPLY
+
     @classmethod
     def proceed(cls) -> 'AbstentionDecision':
         """Construct a decision to proceed with synthesis (do not abstain)."""

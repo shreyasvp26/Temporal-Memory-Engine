@@ -32,5 +32,5 @@ Complete tasks strictly in order. One task = One Git commit. Never start a task 
 
 ## Milestone M5: Retrieval Orchestrator, Lifecycle & FastAPI Server
 - [x] **M5-01**: Implement `retrieve/lanes/vector.py`, `fts.py`, `graph.py`, `temporal.py` and `retrieve/orchestrator.py` (`RetrievalOrchestrator` parallel lane execution, fault tolerance when 1 lane fails, RRF fusion, decay, and context assembly per LLD Section 9.1, 9.3–9.6).
-- [ ] **M5-02**: Implement `retrieve/chat_service.py` (`ChatService` statement-only bypass, retrieval + streaming LLM answer, citation extraction, and turn enqueueing per LLD Section 9.1) and `lifecycle/service.py` (`MemoryLifecycleService`: manual edit, retract, delete, GDPR purge, export per LLD Section 12).
+- [x] **M5-02**: Implement `retrieve/chat_service.py` (`ChatService` statement-only bypass, retrieval + streaming LLM answer, citation extraction, and turn enqueueing per LLD Section 9.1) and `lifecycle/service.py` (`MemoryLifecycleService`: manual edit, retract, delete, GDPR purge, export per LLD Section 12).
 - [ ] **M5-03**: Implement `apps/api/` (`main.py`, `deps.py`, `auth.py`, `rate_limit.py`, `errors.py`, and routes for `/v1/chat`, `/v1/notes`, `/v1/facts`, `/v1/jobs`, `/v1/profile`, `/healthz`, `/readyz` per LLD Section 11). Add API unit/contract tests using `httpx.AsyncClient` (`tests/unit/test_api_routes.py`).

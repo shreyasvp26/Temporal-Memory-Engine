@@ -502,6 +502,21 @@ class FactRepository(Protocol):
         self, user_id: UserId, items: Sequence[tuple[FactId, float]]
     ) -> None: ...
 
+    async def manual_update(
+        self,
+        user_id: UserId,
+        fact_id: FactId,
+        *,
+        fact_text: str | None = None,
+        object_value: str | None = None,
+        object_norm: str | None = None,
+        valid_from: datetime | None = None,
+        valid_to: datetime | None = None,
+        status: FactStatus | str | None = None,
+        confidence: float | None = None,
+        invalidated_at: datetime | None = None,
+    ) -> None: ...
+
 
 class SearchRepository(Protocol):
     async def vector_facts(
@@ -636,6 +651,8 @@ class MessageRepository(Protocol):
 
     async def insert_message(self, m: NewMessage) -> InsertedMessage: ...
 
+    async def insert(self, m: NewMessage) -> InsertedMessage: ...
+
     async def recent_turns(
         self, user_id: UserId, conversation_id: UUID, n: int
     ) -> list[Message]: ...
@@ -674,6 +691,17 @@ class AuditRepository(Protocol):
         after: dict[str, Any] | None,
     ) -> None: ...
 
+    async def record(
+        self,
+        user_id: UserId,
+        actor: str,
+        action: str,
+        target_type: str,
+        target_id: UUID | None = None,
+        before: dict[str, Any] | None = None,
+        after: dict[str, Any] | None = None,
+    ) -> None: ...
+
 
 class ProfileRepository(Protocol):
     async def ensure(self, user_id: UserId) -> None: ...
@@ -683,3 +711,7 @@ class ProfileRepository(Protocol):
     async def set_timezone(self, user_id: UserId, tz: str) -> None: ...
 
     async def list_user_ids(self) -> list[UserId]: ...
+
+    async def purge_user(self, user_id: UserId) -> int: ...
+
+    async def export_user(self, user_id: UserId) -> dict[str, Any]: ...

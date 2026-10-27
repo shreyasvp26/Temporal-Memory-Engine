@@ -10,6 +10,14 @@ from memory_engine.retrieve.assembler import (
     TokenCounter,
     TraceItem,
 )
+from memory_engine.retrieve.chat_service import (
+    SYNTH_SYSTEM_PROMPT,
+    ChatRequest,
+    ChatService,
+    ChatStreamEvent,
+    ChatTurnResult,
+    parse_citations,
+)
 from memory_engine.retrieve.decay import (
     DecayScorer,
 )
@@ -49,9 +57,14 @@ from memory_engine.retrieve.rerank import (
 
 __all__ = [
     'DEFAULT_LANE_WEIGHTS',
+    'SYNTH_SYSTEM_PROMPT',
     'AbstentionDecision',
     'AbstentionPolicy',
     'AssembledContext',
+    'ChatRequest',
+    'ChatService',
+    'ChatStreamEvent',
+    'ChatTurnResult',
     'ContextAssembler',
     'CueKind',
     'DecayScorer',
@@ -78,4 +91,5 @@ __all__ = [
     'TraceItem',
     'VectorLane',
     'needs_llm_planner',
+    'parse_citations',
 ]

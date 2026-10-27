@@ -1,5 +1,6 @@
 """Canonicalizer for predicate resolution, object validation, and canonical text rendering."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -30,11 +31,30 @@ class CanonicalObject:
     text: str
 
 
+class DefaultPredicateRegistry(PredicateRegistry):
+    """Minimal in-memory fallback predicate registry."""
+
+    def __init__(self) -> None:
+        self._predicates: dict[str, Predicate] = {FALLBACK_PREDICATE.name: FALLBACK_PREDICATE}
+
+    def resolve(self, name: str) -> Predicate:
+        return self._predicates.get(name, FALLBACK_PREDICATE)
+
+    def lookup(self, name: str) -> Predicate:
+        return self._predicates.get(name, FALLBACK_PREDICATE)
+
+    def get(self, name: str) -> Predicate:
+        return self._predicates.get(name, FALLBACK_PREDICATE)
+
+    def all(self) -> Sequence[Predicate]:
+        return list(self._predicates.values())
+
+
 class Canonicalizer:
     """Predicate and text canonicalizer per docs/LLD.md Section 8.7."""
 
-    def __init__(self, registry: PredicateRegistry) -> None:
-        self.registry = registry
+    def __init__(self, registry: PredicateRegistry | None = None) -> None:
+        self.registry: PredicateRegistry = registry or DefaultPredicateRegistry()
 
     def resolve_predicate(self, raw: str) -> Predicate:
         """Resolve a raw predicate string via PredicateRegistry.lookup.
