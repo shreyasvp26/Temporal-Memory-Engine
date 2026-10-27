@@ -11,6 +11,7 @@ from memory_engine.db.sql import (
     Q16_ENTITY_NEAREST,
 )
 from memory_engine.domain.enums import EntityType
+from memory_engine.domain.errors import InvariantViolation
 from memory_engine.domain.ids import EntityId, UserId
 from memory_engine.domain.models import Entity
 from memory_engine.ports.repositories import EntityRepository
@@ -102,11 +103,37 @@ where user_id = $1 and type = $2 and lower(trim(canonical_name)) = $3;""",
     async def find_by_norm_name(
         self,
         user_id: UserId,
-        type: EntityType,
-        alias_norm: str,
+        name_or_type: str | EntityType,
+        alias_or_type: str | EntityType | None = None,
+        entity_type: EntityType | None = None,
     ) -> Entity | None:
-        """Convenience alias for find_by_alias."""
-        return await self.find_by_alias(user_id, type, alias_norm)
+        """Find entity by normalized name or alias, optionally preferring matching type."""
+        if isinstance(name_or_type, EntityType):
+            type_val = name_or_type
+            alias_norm = str(alias_or_type) if alias_or_type is not None else ''
+            return await self.find_by_alias(user_id, type_val, alias_norm)
+
+        norm = name_or_type.strip().lower()
+        target_type = alias_or_type if isinstance(alias_or_type, EntityType) else entity_type
+        target_type_str = target_type.value if target_type is not None else None
+
+        async with wrap_db_errors():
+            row = await self.conn.fetchrow(
+                """\
+select e.* from entities e
+left join entity_aliases ea on ea.entity_id = e.id and ea.user_id = e.user_id
+where e.user_id = $1 and (ea.alias_norm = $2 or lower(trim(e.canonical_name)) = $2)
+order by
+  case when $3::text is not null and e.type = $3 then 0 else 1 end,
+  e.created_at desc
+limit 1;""",
+                user_id,
+                norm,
+                target_type_str,
+            )
+            if row is not None:
+                return map_entity(row)
+            return None
 
     async def nearest(
         self,
@@ -130,12 +157,36 @@ where user_id = $1 and type = $2 and lower(trim(canonical_name)) = $3;""",
     async def search_similar_by_embedding(
         self,
         user_id: UserId,
-        type: EntityType,
-        embedding: list[float],
-        k: int,
+        type_or_emb: EntityType | Sequence[float],
+        embedding: Sequence[float] | None = None,
+        k: int | None = None,
+        *,
+        min_cosine: float = 0.92,
+        limit: int = 3,
     ) -> list[tuple[Entity, float]]:
-        """Convenience alias for nearest."""
-        return await self.nearest(user_id, type, embedding, k)
+        """Find similar non-self entities by cosine similarity over embeddings."""
+        if isinstance(type_or_emb, EntityType):
+            if embedding is None:
+                raise InvariantViolation('embedding must be provided when type is specified')
+            return await self.nearest(user_id, type_or_emb, list(embedding), k or limit)
+
+        emb = list(type_or_emb)
+        lim = k or limit
+        async with wrap_db_errors():
+            rows = await self.conn.fetch(
+                """\
+select *, 1 - (embedding <=> $2::vector) as sim
+from entities
+where user_id = $1 and not is_self and embedding is not null
+  and 1 - (embedding <=> $2::vector) >= $3
+order by embedding <=> $2::vector
+limit $4;""",
+                user_id,
+                emb,
+                min_cosine,
+                lim,
+            )
+        return [(map_entity(r), float(r['sim'])) for r in rows]
 
     async def create(
         self,

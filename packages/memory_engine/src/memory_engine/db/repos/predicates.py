@@ -266,6 +266,17 @@ class StaticPredicateRegistry(PredicateRegistry):
                 synonyms=(),
             ),
         )
+        self._related_to = self._by_name.get(
+            'related_to',
+            Predicate(
+                name='related_to',
+                cardinality=Cardinality.MULTI,
+                decay_class=DecayClass.NORMAL,
+                object_kind=ObjectKind.LITERAL,
+                template='{subject} is related to {object}',
+                synonyms=(),
+            ),
+        )
 
     def resolve(self, name: str) -> Predicate:
         """Resolve a predicate name: exact match, then synonym, else fallback to 'other'."""
@@ -275,6 +286,15 @@ class StaticPredicateRegistry(PredicateRegistry):
         if norm in self._by_synonym:
             return self._by_synonym[norm]
         return self._other
+
+    def lookup(self, name: str) -> Predicate:
+        """Resolve predicate by exact name or synonym, else fallback to 'related_to'."""
+        norm = name.strip().lower().replace(' ', '_').replace('-', '_')
+        if norm in self._by_name:
+            return self._by_name[norm]
+        if norm in self._by_synonym:
+            return self._by_synonym[norm]
+        return self._related_to
 
     def get(self, name: str) -> Predicate:
         """Get a predicate by exact name; raises KeyError if not found."""
@@ -322,6 +342,10 @@ class PostgresPredicateRegistry(PredicateRegistry):
     def resolve(self, name: str) -> Predicate:
         """Resolve predicate by exact match, synonym, or 'other' fallback."""
         return self._static.resolve(name)
+
+    def lookup(self, name: str) -> Predicate:
+        """Resolve predicate by exact name or synonym, else fallback to 'related_to'."""
+        return self._static.lookup(name)
 
     def get(self, name: str) -> Predicate:
         """Get predicate by exact name."""
