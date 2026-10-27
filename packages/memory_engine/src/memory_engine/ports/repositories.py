@@ -366,8 +366,18 @@ class SourceRepository(Protocol):
 class EntityRepository(Protocol):
     async def ensure_self(self, user_id: UserId) -> Entity: ...
 
+    async def get_or_create_self(self, user_id: UserId) -> Entity: ...
+
     async def find_by_alias(
         self, user_id: UserId, type: EntityType, alias_norm: str
+    ) -> Entity | None: ...
+
+    async def find_by_norm_name(
+        self,
+        user_id: UserId,
+        name_or_type: str | EntityType,
+        alias_or_type: str | EntityType | None = None,
+        entity_type: EntityType | None = None,
     ) -> Entity | None: ...
 
     async def nearest(
@@ -376,6 +386,17 @@ class EntityRepository(Protocol):
         type: EntityType,
         embedding: list[float],
         k: int,
+    ) -> list[tuple[Entity, float]]: ...
+
+    async def search_similar_by_embedding(
+        self,
+        user_id: UserId,
+        type_or_emb: EntityType | Sequence[float],
+        embedding: Sequence[float] | None = None,
+        k: int | None = None,
+        *,
+        min_cosine: float = 0.92,
+        limit: int = 3,
     ) -> list[tuple[Entity, float]]: ...
 
     async def create(
@@ -598,6 +619,8 @@ class MessageRepository(Protocol):
 
 class PredicateRegistry(Protocol):
     def resolve(self, name: str) -> Predicate: ...
+
+    def lookup(self, name: str) -> Predicate: ...
 
     def get(self, name: str) -> Predicate: ...
 
