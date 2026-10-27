@@ -3,7 +3,7 @@ delete, purge, and export per LLD Section 10/12.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from memory_engine.domain.clock import Clock, SystemClock
@@ -217,7 +217,12 @@ class MemoryLifecycleService:
                     details={'user_id': str(user_id), 'fact_id': str(fact_id)},
                 )
 
-            eff_valid_to = fact.valid_to or now
+            candidate_to = fact.valid_to or now
+            eff_valid_to = (
+                candidate_to
+                if candidate_to > fact.valid_from
+                else fact.valid_from + timedelta(seconds=1)
+            )
 
             before_snapshot: dict[str, Any] = {
                 'status': str(fact.status),
