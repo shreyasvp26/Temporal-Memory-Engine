@@ -205,6 +205,18 @@ class PostgresUnitOfWork(UnitOfWork):
             from memory_engine.db.repos.entities import PostgresEntityRepository
 
             return PostgresEntityRepository(self)
+        if name == 'facts':
+            from memory_engine.db.repos.facts import PostgresFactRepository
+
+            return PostgresFactRepository(self)
+        if name == 'search':
+            from memory_engine.db.repos.search import PostgresSearchRepository
+
+            return PostgresSearchRepository(self)
+        if name == 'jobs':
+            from memory_engine.db.repos.jobs import PostgresJobRepository
+
+            return PostgresJobRepository(self)
         if name == 'messages':
             from memory_engine.db.repos.messages import PostgresMessageRepository
 
@@ -217,9 +229,7 @@ class PostgresUnitOfWork(UnitOfWork):
             from memory_engine.db.repos.profile import PostgresProfileRepository
 
             return PostgresProfileRepository(self)
-        raise NotImplementedError(
-            f'{name.capitalize()} repository adapter not wired yet (see Milestone M3)'
-        )
+        raise NotImplementedError(f'{name.capitalize()} repository adapter not wired yet')
 
     @property
     def sources(self) -> SourceRepository:

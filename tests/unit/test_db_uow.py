@@ -361,16 +361,16 @@ async def test_uow_repository_stubs_and_wiring() -> None:
     pool = FakePool()
     uow = PostgresUnitOfWork(pool, user_id=user_id)
 
-    # Sources repository is wired (M3-03); facts/search/jobs raise NotImplementedError until M3-04
+    # All 8 repositories are wired (M3-03 & M3-04)
+    from memory_engine.db.repos.facts import PostgresFactRepository
+    from memory_engine.db.repos.jobs import PostgresJobRepository
+    from memory_engine.db.repos.search import PostgresSearchRepository
     from memory_engine.db.repos.sources import PostgresSourceRepository
 
     assert isinstance(uow.sources, PostgresSourceRepository)
-    with pytest.raises(NotImplementedError, match='Facts repository'):
-        _ = uow.facts
-    with pytest.raises(NotImplementedError, match='Search repository'):
-        _ = uow.search
-    with pytest.raises(NotImplementedError, match='Jobs repository'):
-        _ = uow.jobs
+    assert isinstance(uow.facts, PostgresFactRepository)
+    assert isinstance(uow.search, PostgresSearchRepository)
+    assert isinstance(uow.jobs, PostgresJobRepository)
 
     # Passing mock repository instances in constructor
     mock_sources = MagicMock()
