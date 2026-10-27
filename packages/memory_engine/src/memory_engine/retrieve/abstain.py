@@ -73,7 +73,7 @@ class AbstentionPolicy:
         plan: QueryPlan,
         result: Any | None,
         ctx: AssembledContext,
-        statement_only: bool,
+        statement_only: bool = False,
     ) -> AbstentionDecision:
         """Decide whether to abstain from LLM synthesis based on context and retrieval scores."""
         # Rule 1: Statement-only never abstains
@@ -92,10 +92,14 @@ class AbstentionPolicy:
         # Rule 3: If min_score > 0, low best score with no StructuredLane hit
         # gives abstain(low_evidence)
         if self.min_score > 0.0 and result is not None:
-            items = getattr(result, 'items', [])
+            fallback = result if isinstance(result, (list, tuple)) else []
+            raw_items = getattr(result, 'items', fallback)
+            items = list(raw_items)
             best_score = max((item.score for item in items), default=0.0)
             has_structured = any(
-                'structured' in getattr(item, 'lanes', ()) for item in items
+                'structured' in getattr(item, 'lanes', ())
+                or 'temporal_facts' in getattr(item, 'lanes', ())
+                for item in items
             ) or getattr(result, 'has_structured_hit', False)
 
             if best_score < self.min_score and not has_structured:
@@ -105,3 +109,19 @@ class AbstentionPolicy:
                 )
 
         return AbstentionDecision.proceed()
+
+    def evaluate(
+        self,
+        plan: QueryPlan,
+        result: Any | None = None,
+        ctx: AssembledContext | None = None,
+        statement_only: bool = False,
+    ) -> AbstentionDecision:
+        """Evaluate retrieval result and assembled context for abstention."""
+        assert ctx is not None, 'ctx must not be None'
+        return self.decide(
+            plan=plan,
+            result=result,
+            ctx=ctx,
+            statement_only=statement_only,
+        )

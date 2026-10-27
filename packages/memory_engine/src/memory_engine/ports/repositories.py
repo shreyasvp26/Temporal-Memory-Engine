@@ -520,7 +520,24 @@ class SearchRepository(Protocol):
         limit: int,
     ) -> list[ScoredFact]: ...
 
+    async def fts_facts(
+        self,
+        user_id: UserId,
+        query: str,
+        flt: TemporalFilter,
+        limit: int,
+    ) -> list[ScoredFact]: ...
+
     async def structured_facts(
+        self,
+        user_id: UserId,
+        subject_ids: Sequence[EntityId] | None,
+        predicates: Sequence[str] | None,
+        flt: TemporalFilter,
+        limit: int,
+    ) -> list[ScoredFact]: ...
+
+    async def temporal_facts(
         self,
         user_id: UserId,
         subject_ids: Sequence[EntityId] | None,
@@ -546,6 +563,15 @@ class SearchRepository(Protocol):
     ) -> list[ScoredSource]: ...
 
     async def expand_graph(
+        self,
+        user_id: UserId,
+        seed_entity_ids: Sequence[EntityId],
+        depth: int,
+        flt: TemporalFilter,
+        limit: int,
+    ) -> list[ScoredFact]: ...
+
+    async def graph_expand(
         self,
         user_id: UserId,
         seed_entity_ids: Sequence[EntityId],

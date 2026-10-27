@@ -19,11 +19,17 @@ __all__ = [
 
 DEFAULT_LANE_WEIGHTS: dict[str, float] = {
     'fact_vector': 1.0,
+    'vector_facts': 1.0,
     'fact_keyword': 0.8,
+    'fts_facts': 0.8,
     'structured': 1.5,
+    'temporal_facts': 1.5,
     'source_vector': 0.6,
+    'vector_sources': 0.6,
     'source_keyword': 0.5,
+    'fts_sources': 0.5,
     'graph_expansion': 0.7,
+    'graph_expand': 0.7,
 }
 
 
