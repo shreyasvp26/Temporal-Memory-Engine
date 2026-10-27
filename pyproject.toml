@@ -73,6 +73,8 @@ forbidden_modules = [
     "memory_engine.ingest",
     "memory_engine.retrieve",
     "memory_engine.lifecycle",
+    "memory_engine.config",
+    "memory_engine.obs",
 ]
 
 [[tool.importlinter.contracts]]
@@ -86,6 +88,8 @@ forbidden_modules = [
     "memory_engine.ingest",
     "memory_engine.retrieve",
     "memory_engine.lifecycle",
+    "memory_engine.config",
+    "memory_engine.obs",
 ]
 
 [[tool.importlinter.contracts]]
@@ -100,6 +104,22 @@ forbidden_modules = [
     "memory_engine.db",
     "memory_engine.llm",
     "memory_engine.embed",
+]
+
+[[tool.importlinter.contracts]]
+name = "Config and obs do not import adapters or services"
+type = "forbidden"
+source_modules = [
+    "memory_engine.config",
+    "memory_engine.obs",
+]
+forbidden_modules = [
+    "memory_engine.db",
+    "memory_engine.llm",
+    "memory_engine.embed",
+    "memory_engine.ingest",
+    "memory_engine.retrieve",
+    "memory_engine.lifecycle",
 ]
 
 [build-system]

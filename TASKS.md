@@ -8,7 +8,7 @@ Complete tasks strictly in order. One task = One Git commit. Never start a task 
 - [x] **M0-03**: Implement `domain/intervals.py` (`TimeInterval`, `TimePoint` per LLD Section 5.2) and `ports/clock.py` (`Clock`, `SystemClock`, `FixedClock` per LLD Section 4.1, 5.2). Add unit tests for UTC enforcement and half-open interval overlap/contains.
 - [x] **M0-04**: Implement `domain/models.py` (`Source`, `Entity`, `Predicate`, `Fact`, `FactEvidence`, `FactRelation`, `Job`, `Message`, `ExtractedFact`, `ExtractionResult`, `Candidate` per LLD Section 5.3, 5.4, 5.7). Add unit tests verifying invariants I-1 to I-9.
 - [x] **M0-05**: Implement `ports/repositories.py`, `ports/uow.py`, `ports/llm.py`, `ports/embed.py` (LLD Section 6.6, 6.7, 7.1, 7.4). Verify with `mypy --strict` and `lint-imports`.
-- [ ] **M0-06**: Implement `config.py` (`Settings` per LLD Section 21) and `obs/logging.py` (LLD Section 18.1).
+- [x] **M0-06**: Implement `config.py` (`Settings` per LLD Section 21) and `obs/logging.py` (LLD Section 18.1).
 - [ ] **M0-07**: Create SQL migrations `000` through `005` in `db/migrations/` and migration runner `db/migrate.py` (LLD Section 5.5, 6.1, 6.2, 6.3, 6.4).
 
 ## Milestone M2: Pure Domain Logic (Zero IO, Sockets Disabled)
