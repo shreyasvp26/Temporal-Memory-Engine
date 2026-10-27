@@ -197,6 +197,26 @@ class PostgresUnitOfWork(UnitOfWork):
             return self._repo_factories[name](self)
         if name in _global_repo_factories:
             return _global_repo_factories[name](self)
+        if name == 'sources':
+            from memory_engine.db.repos.sources import PostgresSourceRepository
+
+            return PostgresSourceRepository(self)
+        if name == 'entities':
+            from memory_engine.db.repos.entities import PostgresEntityRepository
+
+            return PostgresEntityRepository(self)
+        if name == 'messages':
+            from memory_engine.db.repos.messages import PostgresMessageRepository
+
+            return PostgresMessageRepository(self)
+        if name == 'audit':
+            from memory_engine.db.repos.audit import PostgresAuditRepository
+
+            return PostgresAuditRepository(self)
+        if name == 'profiles':
+            from memory_engine.db.repos.profile import PostgresProfileRepository
+
+            return PostgresProfileRepository(self)
         raise NotImplementedError(
             f'{name.capitalize()} repository adapter not wired yet (see Milestone M3)'
         )
