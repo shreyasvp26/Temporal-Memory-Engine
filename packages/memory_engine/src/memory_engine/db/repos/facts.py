@@ -429,7 +429,7 @@ class PostgresFactRepository(FactRepository):
         object_norm: str | None = None,
         valid_from: datetime | None = None,
         valid_to: datetime | None = None,
-        status: FactStatus | None = None,
+        status: FactStatus | str | None = None,
         confidence: float | None = None,
         invalidated_at: datetime | None = None,
     ) -> None:

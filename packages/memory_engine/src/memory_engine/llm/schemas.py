@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from memory_engine.domain.enums import Intent
 from memory_engine.domain.models import ExtractedFact, ExtractionResult
+from memory_engine.ports.llm import PlannerLLMOutput
 
 __all__ = [
     'ExtractedFact',
@@ -14,19 +14,6 @@ __all__ = [
     'PlannerLLMOutput',
     'RepairPromptBuilder',
 ]
-
-
-class PlannerLLMOutput(BaseModel):
-    """Structured LLM output for query planning fallback per LLD Section 9.2."""
-
-    model_config = ConfigDict(extra='forbid', frozen=True)
-
-    intent: Intent = Intent.OPEN
-    time_phrases: list[str] = Field(default_factory=list)
-    entity_names: list[str] = Field(default_factory=list)
-    predicates: list[str] = Field(default_factory=list)
-    multi_hop: bool = False
-    rationale: str | None = None
 
 
 class JudgeLLMOutput(BaseModel):

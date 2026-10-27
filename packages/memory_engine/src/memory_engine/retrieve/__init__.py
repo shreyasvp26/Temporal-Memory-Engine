@@ -10,6 +10,14 @@ from memory_engine.retrieve.assembler import (
     TokenCounter,
     TraceItem,
 )
+from memory_engine.retrieve.chat_service import (
+    SYNTH_SYSTEM_PROMPT,
+    ChatRequest,
+    ChatService,
+    ChatStreamEvent,
+    ChatTurnResult,
+    parse_citations,
+)
 from memory_engine.retrieve.decay import (
     DecayScorer,
 )
@@ -19,7 +27,18 @@ from memory_engine.retrieve.fusion import (
     RankedItem,
     RrfFuser,
 )
-from memory_engine.retrieve.lanes.filter import FilterMode, TemporalFilter
+from memory_engine.retrieve.lanes import (
+    FilterMode,
+    FtsLane,
+    GraphLane,
+    TemporalFilter,
+    TemporalLane,
+    VectorLane,
+)
+from memory_engine.retrieve.orchestrator import (
+    RetrievalOrchestrator,
+    RetrievalResult,
+)
 from memory_engine.retrieve.planner import (
     CueKind,
     EntityHinter,
@@ -38,14 +57,21 @@ from memory_engine.retrieve.rerank import (
 
 __all__ = [
     'DEFAULT_LANE_WEIGHTS',
+    'SYNTH_SYSTEM_PROMPT',
     'AbstentionDecision',
     'AbstentionPolicy',
     'AssembledContext',
+    'ChatRequest',
+    'ChatService',
+    'ChatStreamEvent',
+    'ChatTurnResult',
     'ContextAssembler',
     'CueKind',
     'DecayScorer',
     'EntityHinter',
     'FilterMode',
+    'FtsLane',
+    'GraphLane',
     'Hit',
     'IntentClassification',
     'IntentClassifier',
@@ -53,12 +79,17 @@ __all__ = [
     'QueryPlan',
     'RankedItem',
     'Reranker',
+    'RetrievalOrchestrator',
+    'RetrievalResult',
     'RrfFuser',
     'RulesPlanner',
     'TemporalCueExtractor',
     'TemporalFilter',
+    'TemporalLane',
     'TimeCue',
     'TokenCounter',
     'TraceItem',
+    'VectorLane',
     'needs_llm_planner',
+    'parse_citations',
 ]
