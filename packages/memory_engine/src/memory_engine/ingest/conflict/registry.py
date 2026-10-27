@@ -50,6 +50,16 @@ class ConflictResolver:
         strategy = self._registry.for_cardinality(c.cardinality)
         return strategy.plan(c, timeline, ctx, hint=effective_hint)
 
+    def resolve(
+        self,
+        c: Candidate,
+        timeline: Sequence[Fact],
+        ctx: ResolutionContext,
+        hint: JudgeHint | None = None,
+    ) -> ResolutionPlan:
+        """Resolve candidate against fact timeline (alias for plan)."""
+        return self.plan(c, timeline, ctx, hint=hint)
+
 
 def default_registry() -> StrategyRegistry:
     """Construct and return the default StrategyRegistry with all frozen baseline strategies."""

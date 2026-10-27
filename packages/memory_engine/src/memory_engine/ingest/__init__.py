@@ -26,6 +26,14 @@ from memory_engine.ingest.extractor import (
 )
 from memory_engine.ingest.gate import GateDecision, IngestGate
 from memory_engine.ingest.plan_executor import PlanExecutor
+from memory_engine.ingest.service import (
+    EnqueueResult,
+    IngestionService,
+    IngestService,
+    NoteAccepted,
+    NoteIngestResult,
+    TurnAccepted,
+)
 from memory_engine.ingest.time_resolver import ResolvedCandidateTime, TimeResolver
 from memory_engine.ingest.windowing import NoteChunker
 
@@ -33,19 +41,25 @@ __all__ = [
     'CanonicalObject',
     'Canonicalizer',
     'ConflictResolver',
+    'EnqueueResult',
     'EntityLinker',
     'FALLBACK_PREDICATE',
     'FactExtractor',
     'GateDecision',
     'IngestGate',
+    'IngestService',
+    'IngestionService',
     'LLMFactExtractor',
+    'NoteAccepted',
     'NoteChunker',
+    'NoteIngestResult',
     'Outcome',
     'PlanExecutor',
     'ResolutionContext',
     'ResolutionPlan',
     'ResolvedCandidateTime',
     'TimeResolver',
+    'TurnAccepted',
     'ValidatedExtraction',
     'default_registry',
     'is_compatible_type',

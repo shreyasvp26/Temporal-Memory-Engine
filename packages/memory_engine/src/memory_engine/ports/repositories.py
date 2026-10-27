@@ -433,6 +433,13 @@ class FactRepository(Protocol):
         lock: bool,
     ) -> list[Fact]: ...
 
+    async def find_for_resolution(
+        self,
+        user_id: UserId,
+        subject_id: EntityId,
+        predicate: str,
+    ) -> list[Fact]: ...
+
     async def insert(
         self,
         c: Candidate,
@@ -482,6 +489,8 @@ class FactRepository(Protocol):
     ) -> builtins.list[FactId]: ...
 
     async def hard_delete(self, user_id: UserId, fact_ids: Sequence[FactId]) -> int: ...
+
+    async def hard_delete_expired_tombstones(self, before: datetime) -> int: ...
 
     async def record_access(
         self, user_id: UserId, fact_ids: Sequence[FactId], at: datetime
