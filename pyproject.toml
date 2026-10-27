@@ -49,6 +49,7 @@ quote-style = "single"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "SLF001", "TCH"]
+ignore = ["UP046"]
 
 [tool.mypy]
 python_version = "3.12"
