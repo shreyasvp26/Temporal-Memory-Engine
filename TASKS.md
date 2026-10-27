@@ -27,7 +27,7 @@ Complete tasks strictly in order. One task = One Git commit. Never start a task 
 
 ## Milestone M4: Ingestion Pipeline, Entity Linking & Worker Loop
 - [x] **M4-01**: Implement `ingest/entity_linker.py` (`EntityLinker` 5-step cascade: self pronouns, exact normalized name, fuzzy trigram/cosine >= 0.92, create new entity per LLD Section 8.6) and `ingest/canonicalizer.py` (`Canonicalizer` predicate mapping & text rendering per LLD Section 8.7).
-- [ ] **M4-02**: Implement `ingest/extractor.py` (`FactExtractor` window prompt builder, JSON repair retry, and evidence span validation per LLD Section 8.3–8.4) and `ingest/plan_executor.py` (executing `ResolutionPlan` `Op` commands against `FactRepository` under `uow.lock_user` per LLD Section 8.8–8.9).
+- [x] **M4-02**: Implement `ingest/extractor.py` (`FactExtractor` window prompt builder, JSON repair retry, and evidence span validation per LLD Section 8.3–8.4) and `ingest/plan_executor.py` (executing `ResolutionPlan` `Op` commands against `FactRepository` under `uow.lock_user` per LLD Section 8.8–8.9).
 - [ ] **M4-03**: Implement `ingest/service.py` (`IngestService`: `enqueue_turn`, `accept_note`, and 4-phase out-of-transaction `run_extract_job` Phase A/B/C/D per LLD Section 8.1, 8.2) and `apps/worker/main.py` (`WorkerRunner` poll/heartbeat/reaper loop per LLD Section 10). Add end-to-end unit tests using fake in-memory UoW/Repositories (`tests/unit/test_ingest_pipeline.py`).
 
 ## Milestone M5: Retrieval Orchestrator, Lifecycle & FastAPI Server
