@@ -59,6 +59,11 @@ mypy_path = "packages/memory_engine/src"
 explicit_package_bases = true
 namespace_packages = true
 
+[tool.pyrefly]
+search-path = ["packages/memory_engine/src"]
+python-version = "3.12"
+python-interpreter = ".venv/bin/python"
+
 [tool.importlinter]
 root_packages = ["memory_engine"]
 
