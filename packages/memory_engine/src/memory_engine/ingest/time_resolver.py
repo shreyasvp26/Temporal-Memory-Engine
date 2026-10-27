@@ -165,6 +165,7 @@ _RANGE_BETWEEN = re.compile(
 )
 _RANGE_SINCE = re.compile(r'^\s*(?:since|from)\s+(.+)$', re.IGNORECASE)
 _RANGE_UNTIL = re.compile(r'^\s*(?:until|till|through|to|before)\s+(.+)$', re.IGNORECASE)
+_RANGE_AFTER = re.compile(r'^\s*after\s+(.+)$', re.IGNORECASE)
 
 
 class TimeResolver:
@@ -279,6 +280,13 @@ class TimeResolver:
             x_pt = self.resolve_point(x_text, anchor, tz)
             if x_pt is not None:
                 return TimeInterval(start=None, end=x_pt.span_end())
+            return None
+
+        if m := _RANGE_AFTER.match(p):
+            x_text = m.group(1)
+            x_pt = self.resolve_point(x_text, anchor, tz)
+            if x_pt is not None:
+                return TimeInterval(start=x_pt.span_end(), end=None)
             return None
 
         pt = self.resolve_point(p, anchor, tz)
