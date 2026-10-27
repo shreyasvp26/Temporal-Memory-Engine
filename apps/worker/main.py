@@ -221,6 +221,40 @@ async def main() -> None:
     """Worker process entrypoint."""
     logging.basicConfig(level=logging.INFO)
     _logger.info('Starting Temporal Memory Engine worker runner...')
+    from memory_engine.config import Settings
+    from memory_engine.db.pool import create_worker_pool
+    from memory_engine.db.uow import PostgresUnitOfWorkFactory
+    from memory_engine.domain.clock import SystemClock
+    from memory_engine.ingest.canonicalizer import Canonicalizer
+
+    settings = Settings()
+    db_url = settings.database_url_worker or settings.database_url_api
+    if not db_url:
+        _logger.warning('No worker database URL configured (SB_DATABASE_URL_WORKER). Exiting.')
+        return
+
+    _logger.info('Connecting worker to database...')
+    pool = await create_worker_pool(db_url)
+    try:
+        clock = SystemClock()
+        uows = PostgresUnitOfWorkFactory(pool)
+        service = IngestService(
+            uows=uows,
+            clock=clock,
+            canonicalizer=Canonicalizer(),
+            cfg=settings.ingest,
+        )
+        runner = WorkerRunner(
+            uows=uows,
+            service=service,
+            clock=clock,
+            cfg=settings.worker,
+        )
+        _logger.info('Worker runner started with concurrency=%d', runner.concurrency)
+        await runner.run_forever()
+    finally:
+        await pool.close()
+        _logger.info('Worker runner stopped.')
 
 
 if __name__ == '__main__':

@@ -143,9 +143,59 @@ def create_app(
 
     @asynccontextmanager
     async def app_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        pool = None
         if container is not None:
             app.state.container = container
+        elif effective_settings.database_url_api:
+            from memory_engine.db.pool import create_api_pool
+            from memory_engine.db.uow import PostgresUnitOfWorkFactory
+            from memory_engine.domain.clock import SystemClock
+            from memory_engine.ingest.canonicalizer import Canonicalizer
+            from memory_engine.ingest.service import IngestService
+            from memory_engine.lifecycle.service import MemoryLifecycleService
+            from memory_engine.retrieve.chat_service import ChatService
+            from memory_engine.retrieve.orchestrator import RetrievalOrchestrator
+
+            from .auth import JwtVerifier
+            from .rate_limit import RateLimiter
+
+            clock = SystemClock()
+            pool = await create_api_pool(effective_settings.database_url_api)
+            uows = PostgresUnitOfWorkFactory(pool)
+            canonicalizer = Canonicalizer()
+            lifecycle = MemoryLifecycleService(uows=uows, clock=clock, canonicalizer=canonicalizer)
+            ingest = IngestService(uows=uows, clock=clock, canonicalizer=canonicalizer)
+            retrieval = RetrievalOrchestrator(
+                uows=uows, clock=clock, cfg=effective_settings.retrieval
+            )
+            chat = ChatService(orchestrator=retrieval, clock=clock, uows=uows)
+            rate_limiter = RateLimiter(
+                clock=clock,
+                bucket_configs={
+                    'chat': (float(effective_settings.rate_chat_per_min), 10.0),
+                    'ingest': (float(effective_settings.rate_ingest_per_min), 10.0),
+                    'search': (float(effective_settings.rate_search_per_min), 20.0),
+                    'default': (float(effective_settings.rate_default_per_min), 30.0),
+                },
+            )
+            jwt_verifier = JwtVerifier(effective_settings.jwt, env=effective_settings.env)
+
+            app.state.container = AppContainer(
+                settings=effective_settings,
+                clock=clock,
+                uows=uows,
+                ingest=ingest,
+                retrieval=retrieval,
+                chat=chat,
+                lifecycle=lifecycle,
+                rate_limiter=rate_limiter,
+                jwt_verifier=jwt_verifier,
+            )
+
         yield
+
+        if pool is not None:
+            await pool.close()
 
     app = FastAPI(
         title='Temporal Memory Engine',
@@ -179,3 +229,6 @@ def create_app(
     app.include_router(api_router)
 
     return app
+
+
+app = create_app()
