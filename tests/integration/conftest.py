@@ -68,6 +68,8 @@ def migrated_db(pg_url: str) -> Iterator[str]:
             await conn.execute("ALTER ROLE app_worker WITH PASSWORD 'worker_pass'")
             await conn.execute('GRANT USAGE ON SCHEMA auth TO app_api, app_worker')
             await conn.execute('GRANT ALL ON TABLE auth.users TO app_api, app_worker')
+            await conn.execute('GRANT SELECT ON schema_migrations, app_meta TO app_api, app_worker')
+            await conn.execute('GRANT SELECT ON schema_migrations, app_meta TO app_api, app_worker')
             await verify_startup_guard(
                 conn, expected_embedding_model_id='nomic-ai/nomic-embed-text-v1.5'
             )

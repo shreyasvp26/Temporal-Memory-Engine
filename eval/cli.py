@@ -9,14 +9,35 @@ Usage:
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from eval.longmemeval import LongMemEvalRunner, load_dataset, render_markdown_report
 
+if TYPE_CHECKING:
+    from memory_engine.ports.uow import UnitOfWorkFactory
+
 _logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
+
+
+def _strip_code_fences(text: str) -> str:
+    """Strip markdown code block fences and whitespace from model response."""
+    text = text.strip()
+    if text.startswith('```'):
+        lines = text.splitlines()
+        if lines and lines[0].startswith('```'):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == '```':
+            lines = lines[:-1]
+        text = '\n'.join(lines).strip()
+    return text
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -153,14 +174,7 @@ def _resolve_env_value(key: str, default: str = '') -> str:
 
 
 class _PacedGateway:
-    """LLMGateway shim with per-call pacing and retry/backoff on 503/429.
-
-    Retries up to *_MAX_ATTEMPTS* times with exponential back-off on
-    LLMUnavailable (503) and LLMRateLimited (429).  On final failure the call
-    is transparently re-issued against *fallback_client* (if provided) before
-    re-raising.  Only complete_text is wired; that is all the judge and reader
-    use.
-    """
+    """LLMGateway shim with per-call pacing, retry/backoff on 503/429, and JSON completion."""
 
     _MAX_ATTEMPTS: int = 4
 
@@ -211,14 +225,114 @@ class _PacedGateway:
 
         raise last_exc  # type: ignore[misc]
 
+    async def complete_json(self, req: Any, schema: type[T]) -> T:
+        """Pace then delegate JSON completion with backoff and schema validation."""
+        from memory_engine.domain.errors import LLMRateLimited, LLMUnavailable
+        from memory_engine.ports.llm import LLMRequest
+
+        if not getattr(req, 'json_mode', False):
+            req = LLMRequest(
+                purpose=req.purpose,
+                tier=req.tier,
+                messages=req.messages,
+                prompt_version=req.prompt_version,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                json_mode=True,
+                priority=getattr(req, 'priority', 'interactive'),
+                timeout_s=getattr(req, 'timeout_s', 30.0),
+            )
+
+        schema_any: Any = schema
+        last_exc: Exception | None = None
+        for attempt in range(self._MAX_ATTEMPTS):
+            try:
+                resp = await self.complete_text(req)
+                raw_text = getattr(resp, 'text', '')
+                clean_text = _strip_code_fences(raw_text)
+                data = json.loads(clean_text)
+                if isinstance(data, list):
+                    data = {'facts': data}
+                if isinstance(data, dict) and 'facts' in data and isinstance(data['facts'], list):
+                    for f in data['facts']:
+                        if isinstance(f, dict):
+                            f.setdefault('confidence', 1.0)
+                            f.setdefault('subject_type', 'person')
+                            f.setdefault('object_type', 'literal')
+                            f.setdefault('is_retraction', False)
+                            f.setdefault('valid_from_text', None)
+                            f.setdefault('valid_to_text', None)
+                            f.setdefault('source_turn', 0)
+                if hasattr(schema_any, 'model_validate'):
+                    val_res: T = schema_any.model_validate(data)
+                    return val_res
+                fb_inst: T = schema(**data)
+                return fb_inst
+            except (LLMUnavailable, LLMRateLimited) as exc:
+                last_exc = exc
+                wait = self._delay_s * (2**attempt)
+                _logger.warning(
+                    'Gemini transient error on attempt %d/%d (%s); retrying in %.1fs',
+                    attempt + 1,
+                    self._MAX_ATTEMPTS,
+                    exc,
+                    wait,
+                )
+                await asyncio.sleep(wait)
+            except Exception as parse_exc:
+                last_exc = parse_exc
+                _logger.warning('JSON parse attempt %d failed: %s', attempt + 1, parse_exc)
+                if self._delay_s > 0.0:
+                    await asyncio.sleep(self._delay_s)
+
+        if self._fallback_client is not None:
+            _logger.warning(
+                'All %d attempts on primary model failed; trying fallback model for complete_json',
+                self._MAX_ATTEMPTS,
+            )
+            try:
+                fb_resp = await self._fallback_client.complete(req)  # type: ignore[attr-defined]
+                raw_text = getattr(fb_resp, 'text', '')
+                clean_text = _strip_code_fences(raw_text)
+                data = json.loads(clean_text)
+                if isinstance(data, list):
+                    data = {'facts': data}
+                if isinstance(data, dict) and 'facts' in data and isinstance(data['facts'], list):
+                    for f in data['facts']:
+                        if isinstance(f, dict):
+                            f.setdefault('confidence', 1.0)
+                            f.setdefault('subject_type', 'person')
+                            f.setdefault('object_type', 'literal')
+                            f.setdefault('is_retraction', False)
+                            f.setdefault('valid_from_text', None)
+                            f.setdefault('valid_to_text', None)
+                            f.setdefault('source_turn', 0)
+                if hasattr(schema_any, 'model_validate'):
+                    val_res_fb: T = schema_any.model_validate(data)
+                    return val_res_fb
+                fb_inst2: T = schema(**data)
+                return fb_inst2
+            except Exception as fb_exc:
+                _logger.error('Fallback model also failed for complete_json: %s', fb_exc)
+
+        raise last_exc  # type: ignore[misc]
+
 
 async def _run_live_eval(args: argparse.Namespace) -> int:
     """Run live multi-baseline evaluation using GeminiClient and CachedEmbedder."""
+    from memory_engine.domain.clock import FixedClock
     from memory_engine.embed.cached import CachedEmbedder
     from memory_engine.embed.fastembed_adapter import FastEmbedAdapter
+    from memory_engine.ingest.extractor import FactExtractor
+    from memory_engine.ingest.service import IngestService
     from memory_engine.llm.gemini import GeminiClient
 
-    from eval.baselines import LLMReader, create_baseline
+    from eval.baselines import (
+        LLMReader,
+        build_baseline_orchestrator,
+        create_baseline,
+        get_baseline_config,
+    )
     from eval.longmemeval import EvalReport, LongMemEvalJudge
 
     api_key = _resolve_env_value('SB_GEMINI_API_KEY')
@@ -257,6 +371,35 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
         fallback_client=fallback_client,
     )
 
+    # Connect to PostgreSQL via SB_DATABASE_URL if available
+    db_url = _resolve_env_value('SB_DATABASE_URL')
+    pool: Any = None
+    uow_factory: UnitOfWorkFactory | None = None
+    if db_url:
+        try:
+            from memory_engine.db.pool import create_db_pool
+            from memory_engine.db.uow import PostgresUnitOfWorkFactory
+
+            pool = await create_db_pool(db_url, verify_schema=False)
+            uow_factory = PostgresUnitOfWorkFactory(pool)
+            _logger.info('Connected live Postgres pool at %s', db_url)
+        except Exception as err:
+            _logger.warning('Could not connect to Postgres at %s: %s', db_url, err)
+
+    clock = FixedClock(datetime(2024, 1, 1, tzinfo=UTC))
+    extractor = FactExtractor(llm=paced_gw)  # type: ignore[arg-type]
+    ingest_service = (
+        IngestService(
+            uows=uow_factory,
+            extractor=extractor,
+            embedder=embedder,
+            clock=clock,
+            debounce_s=0.0,
+        )
+        if uow_factory is not None
+        else None
+    )
+
     # Reader and judge backed by real Gemini
     reader = LLMReader(llm_gateway=paced_gw)  # type: ignore[arg-type]
     judge = LongMemEvalJudge(llm=paced_gw, model_id=model)  # type: ignore[arg-type]
@@ -281,11 +424,15 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
     )
     if not dataset_path.exists():
         sys.stderr.write(f'Error: dataset file not found: {dataset_path}\n')
+        if pool is not None:
+            await pool.close()
         return 2
 
     questions = load_dataset(dataset_path)
     if not questions:
         sys.stderr.write(f'Error: no questions loaded from {dataset_path}\n')
+        if pool is not None:
+            await pool.close()
         return 2
 
     if args.limit:
@@ -298,44 +445,66 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
 
     all_reports: list[tuple[str, EvalReport]] = []
 
-    for bl_name in baseline_names:
-        _logger.info('Running live baseline: %s (%d questions)', bl_name, len(questions))
-        sys.stdout.write(f'\n=== Baseline: {bl_name} ===\n')
-        sys.stdout.flush()
+    try:
+        for bl_name in baseline_names:
+            _logger.info('Running live baseline: %s (%d questions)', bl_name, len(questions))
+            sys.stdout.write(f'\n=== Baseline: {bl_name} ===\n')
+            sys.stdout.flush()
 
-        # Explicitly instantiate the baseline system so embedder/reader are wired in.
-        # Passing system= directly bypasses the try/except auto-create path in the
-        # runner that silently swallows the missing-uow_factory error and leaves
-        # self.system = None, causing every answer to be an InvariantViolation.
-        bl_system = create_baseline(bl_name, reader=reader, embedder=embedder)
+            bl_cfg = get_baseline_config(bl_name)
+            orch = None
+            if uow_factory is not None and bl_cfg.enabled_lanes:
+                orch = build_baseline_orchestrator(
+                    config=bl_cfg,
+                    uow_factory=uow_factory,
+                    embedder=embedder,
+                    clock=clock,
+                    llm_gateway=paced_gw,  # type: ignore[arg-type]
+                )
 
-        runner = LongMemEvalRunner(
-            system_name=bl_name,
-            system=bl_system,
-            baseline=None,
-            judge=judge,
-            reader=reader,
-            embedder=embedder,
-            seed=args.seed,
-        )
+            bl_system = create_baseline(
+                bl_name,
+                reader=reader,
+                uow_factory=uow_factory,
+                embedder=embedder,
+                orchestrator=orch,
+                ingest_service=ingest_service,
+                clock=clock,
+            )
 
-        report = await runner.run(questions)
-        all_reports.append((bl_name, report))
+            runner = LongMemEvalRunner(
+                system_name=bl_name,
+                system=bl_system,
+                baseline=None,
+                judge=judge,
+                reader=reader,
+                embedder=embedder,
+                seed=args.seed,
+                uow_factory=uow_factory,
+                ingest_service=ingest_service,
+                clock=clock,
+            )
 
-        md_content = render_markdown_report(report)
-        json_content = report.to_json(indent=2)
+            report = await runner.run(questions)
+            all_reports.append((bl_name, report))
 
-        md_file = out_dir / f'report_{bl_name}.md'
-        json_file = out_dir / f'report_{bl_name}.json'
+            md_content = render_markdown_report(report)
+            json_content = report.to_json(indent=2)
 
-        md_file.write_text(md_content, encoding='utf-8')
-        json_file.write_text(json_content, encoding='utf-8')
+            md_file = out_dir / f'report_{bl_name}.md'
+            json_file = out_dir / f'report_{bl_name}.json'
 
-        sys.stdout.write(md_content)
-        _logger.info('Saved %s reports to %s and %s', bl_name, md_file, json_file)
+            md_file.write_text(md_content, encoding='utf-8')
+            json_file.write_text(json_content, encoding='utf-8')
 
-        if any(r.error is not None for r in report.item_results):
-            overall_exit = 3
+            sys.stdout.write(md_content)
+            _logger.info('Saved %s reports to %s and %s', bl_name, md_file, json_file)
+
+            if any(r.error is not None for r in report.item_results):
+                overall_exit = 3
+    finally:
+        if pool is not None:
+            await pool.close()
 
     # Write combined summary table across all baselines
     if all_reports:

@@ -23,7 +23,7 @@ def _l2_normalize(vec: Sequence[float]) -> list[float]:
     if norm == 0.0:
         raise EmbeddingError('Cannot normalize zero vector', code='E-EMB-01')
 
-    return [x / norm for x in vec]
+    return [float(x / norm) for x in vec]
 
 
 class FastEmbedAdapter(Embedder):
@@ -47,7 +47,7 @@ class FastEmbedAdapter(Embedder):
             return self._model
 
         try:
-            from fastembed import TextEmbedding  # type: ignore[import-not-found]
+            from fastembed import TextEmbedding
 
             self._model = TextEmbedding(model_name=self.model_id)
             return self._model

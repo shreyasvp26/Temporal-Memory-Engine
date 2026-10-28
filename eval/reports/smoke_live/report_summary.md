@@ -6,5 +6,5 @@
 
 | Baseline | Accuracy | Token F1 | Abstention Acc | p50 Latency (ms) |
 | :--- | :---: | :---: | :---: | :---: |
-| vector_only | 0.0% | 0.0% | 100.0% | 17800 |
-| full_bitemporal | 0.0% | 0.0% | 100.0% | 13729 |
+| vector_only | 100.0% | 14.3% | 100.0% | 3684 |
+| full_bitemporal | 100.0% | 20.0% | 100.0% | 3093 |

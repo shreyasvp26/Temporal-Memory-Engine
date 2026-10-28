@@ -172,9 +172,10 @@ async def create_db_pool(
                 expected_embedding_model_id=expected_embedding_model_id,
             )
         except Exception:
+            await pool.release(conn)
             await pool.close()
             raise
-        finally:
+        else:
             await pool.release(conn)
 
     return pool

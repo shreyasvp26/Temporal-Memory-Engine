@@ -16,6 +16,7 @@ dependencies = [
     "dateparser>=1.2.0",
     "structlog>=24.4.0",
     "pyjwt[crypto]>=2.9.0",
+    "fastembed>=0.9.1",
 ]
 
 [project.optional-dependencies]

@@ -15,6 +15,7 @@ Provides:
 - render_markdown_report: Renders publication-ready Markdown benchmark tables.
 """
 
+import contextlib
 import json
 import logging
 import re
@@ -172,10 +173,10 @@ class EvalQuestion:
         else:
             is_abs = is_abstention
 
-        object.__setattr__(self, 'question_id', str(effective_id))
+        object.__setattr__(self, 'question_id', effective_id)
         object.__setattr__(self, 'question_type', effective_type)
-        object.__setattr__(self, 'question', str(question))
-        object.__setattr__(self, 'gold_answer', str(effective_gold))
+        object.__setattr__(self, 'question', question)
+        object.__setattr__(self, 'gold_answer', effective_gold)
         object.__setattr__(self, 'question_date', effective_dt)
         object.__setattr__(self, 'sessions', tuple(sessions))
         object.__setattr__(
@@ -183,7 +184,7 @@ class EvalQuestion:
             'evidence_session_ids',
             frozenset(evidence_session_ids) if evidence_session_ids is not None else frozenset(),
         )
-        object.__setattr__(self, 'is_abstention', bool(is_abs))
+        object.__setattr__(self, 'is_abstention', is_abs)
 
     @property
     def id(self) -> str:
@@ -617,9 +618,27 @@ class LongMemEvalRunner:
                     reader=self.reader,
                     uow_factory=self.uow_factory,
                     embedder=self.embedder,
+                    ingest_service=self.ingest_service,
+                    clock=self.clock,
                 )
             except Exception as err:
                 _logger.debug('Could not auto-instantiate system %s: %s', self.system_name, err)
+        elif self.system is not None:
+            if getattr(self.system, 'uow_factory', None) is None and self.uow_factory is not None:
+                with contextlib.suppress(Exception):
+                    object.__setattr__(self.system, 'uow_factory', self.uow_factory)
+            if (
+                getattr(self.system, 'ingest_service', None) is None
+                and self.ingest_service is not None
+            ):
+                with contextlib.suppress(Exception):
+                    object.__setattr__(self.system, 'ingest_service', self.ingest_service)
+            if getattr(self.system, 'embedder', None) is None and self.embedder is not None:
+                with contextlib.suppress(Exception):
+                    object.__setattr__(self.system, 'embedder', self.embedder)
+            if getattr(self.system, 'clock', None) is None and self.clock is not None:
+                with contextlib.suppress(Exception):
+                    object.__setattr__(self.system, 'clock', self.clock)
 
         if isinstance(baseline, str):
             self.baseline: MemorySystem | None = create_baseline(
@@ -627,6 +646,8 @@ class LongMemEvalRunner:
                 reader=self.reader,
                 uow_factory=self.uow_factory,
                 embedder=self.embedder,
+                ingest_service=self.ingest_service,
+                clock=self.clock,
             )
             self.baseline_name: str | None = baseline
         else:
@@ -723,6 +744,8 @@ class LongMemEvalRunner:
                     reader=self.reader,
                     uow_factory=self.uow_factory,
                     embedder=self.embedder,
+                    ingest_service=self.ingest_service,
+                    clock=self.clock,
                 )
                 eval_case = question.to_eval_case()
                 await temp_sys.prepare(eval_case)

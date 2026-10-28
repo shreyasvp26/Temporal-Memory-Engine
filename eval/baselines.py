@@ -16,16 +16,18 @@ Provides:
   6. FullBitemporalBaseline / TemporalMemoryBaseline (5 lanes, S1-S10, filter, decay)
 """
 
+import math
+import re
 import time
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, ClassVar, Protocol
 from uuid import uuid5
 from zoneinfo import ZoneInfo
 
-from memory_engine.domain.enums import Cardinality, Intent
+from memory_engine.domain.enums import Cardinality, Intent, Role
 from memory_engine.domain.ids import UserId
 from memory_engine.domain.models import Candidate, Entity, Fact, JudgeHint, Message
 from memory_engine.ingest.conflict.event import EventStrategy
@@ -37,6 +39,7 @@ from memory_engine.ingest.conflict.plan import (
 )
 from memory_engine.ingest.conflict.registry import StrategyRegistry
 from memory_engine.ingest.conflict.single import SingleValuedStrategy
+from memory_engine.ingest.service import IngestService
 from memory_engine.ports.clock import Clock
 from memory_engine.ports.embed import Embedder
 from memory_engine.ports.llm import ChatMessage, LLMGateway, LLMRequest
@@ -76,6 +79,7 @@ __all__ = [
     'SingleAsMultiStrategy',
     'SystemAnswer',
     'TemporalMemoryBaseline',
+    'TurnChunk',
     'VectorOnlyBaseline',
     'build_baseline_conflict_registry',
     'build_baseline_orchestrator',
@@ -696,6 +700,19 @@ class FullContextBaseline:
         self._cases.pop(case.case_id, None)
 
 
+@dataclass(frozen=True, slots=True)
+class TurnChunk:
+    """Turn chunk representation for naive retrieval baselines."""
+
+    session_id: str
+    ts: datetime
+    role: str
+    content: str
+    embed_text: str
+    formatted: str
+    turn_index: int
+
+
 class RetrievalBaseline:
     """Base class for retrieval-driven memory system baselines."""
 
@@ -706,12 +723,16 @@ class RetrievalBaseline:
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         self.config = config
         self.name = config.name
         self.reader = reader or SimpleReader()
         self.uow_factory = uow_factory
         self.embedder = embedder
+        self.ingest_service = ingest_service
+        self.clock = clock
 
         if orchestrator is not None:
             self.orchestrator: RetrievalOrchestrator | None = orchestrator
@@ -720,13 +741,42 @@ class RetrievalBaseline:
                 config=config,
                 uow_factory=uow_factory,
                 embedder=embedder,
+                clock=clock,
             )
         else:
             self.orchestrator = None
 
     async def prepare(self, case: EvalCase) -> None:
-        """Prepare tenant data (implemented by runner/e2e integration)."""
-        return None
+        """Prepare tenant data (ingests turns and runs extract jobs if configured)."""
+        if self.ingest_service is not None and self.uow_factory is not None:
+            user_id = UserId(uuid5(EVAL_NS, f'{self.name}:{case.case_id}'))
+            sorted_sessions = sorted(case.sessions, key=lambda s: s.ts)
+            for session in sorted_sessions:
+                if self.clock is not None and hasattr(self.clock, 'set'):
+                    self.clock.set(session.ts)
+
+                for turn_idx, turn in enumerate(session.turns):
+                    turn_ts = session.ts + timedelta(seconds=turn_idx)
+                    if self.clock is not None and hasattr(self.clock, 'set'):
+                        self.clock.set(turn_ts)
+
+                    role = Role.USER if turn.role.lower() == 'user' else Role.ASSISTANT
+                    async with self.uow_factory.for_user(user_id) as uow:
+                        await self.ingest_service.ensure_user_bootstrap(uow, user_id)
+                        res = await self.ingest_service.enqueue_turn(
+                            uow,
+                            user_id=user_id,
+                            session_id=session.session_id,
+                            role=role,
+                            text=turn.content,
+                            source_ts=turn_ts,
+                        )
+
+                    if res.job_id is not None:
+                        async with self.uow_factory.for_user(user_id, readonly=True) as uow:
+                            job = await uow.jobs.get(user_id, res.job_id)
+                        if job is not None:
+                            await self.ingest_service.run_extract_job(job)
 
     async def answer(self, case: EvalCase) -> SystemAnswer:
         """Retrieve context via orchestrator and generate answer via reader."""
@@ -735,6 +785,9 @@ class RetrievalBaseline:
         retrieved_ids: list[str] = []
         context_text = ''
         extras: dict[str, Any] = {'config': self.config.name}
+
+        if self.clock is not None and hasattr(self.clock, 'set'):
+            self.clock.set(case.question_ts)
 
         if self.orchestrator is not None:
             retrieval_res = await self.orchestrator.retrieve(
@@ -768,11 +821,18 @@ class RetrievalBaseline:
 
     async def cleanup(self, case: EvalCase) -> None:
         """Clean up tenant state for case."""
-        return None
+        if self.uow_factory is not None:
+            user_id = UserId(uuid5(EVAL_NS, f'{self.name}:{case.case_id}'))
+            try:
+                async with self.uow_factory.for_user(user_id) as uow:
+                    if hasattr(uow, 'profiles') and hasattr(uow.profiles, 'purge_user'):
+                        await uow.profiles.purge_user(user_id)
+            except Exception:
+                pass
 
 
 class VectorOnlyBaseline(RetrievalBaseline):
-    """Vector lane only baseline with ANY_HISTORY filter and no decay/graph."""
+    """Vector lane only baseline embedding session turns and retrieving by cosine similarity."""
 
     def __init__(
         self,
@@ -781,6 +841,8 @@ class VectorOnlyBaseline(RetrievalBaseline):
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         cfg = config or get_baseline_config('vector_only')
         super().__init__(
@@ -789,11 +851,88 @@ class VectorOnlyBaseline(RetrievalBaseline):
             reader=reader,
             uow_factory=uow_factory,
             embedder=embedder,
+            ingest_service=ingest_service,
+            clock=clock,
         )
+        self._case_chunks: dict[str, list[tuple[TurnChunk, list[float]]]] = {}
+
+    async def prepare(self, case: EvalCase) -> None:
+        if self.embedder is None or not case.sessions:
+            return
+
+        chunks: list[TurnChunk] = []
+        for session in case.sessions:
+            dt_str = session.ts.strftime('%Y-%m-%d %H:%M:%S')
+            for turn_idx, turn in enumerate(session.turns):
+                turn_ts = session.ts + timedelta(seconds=turn_idx)
+                embed_text = f'{turn.role.capitalize()}: {turn.content}'
+                formatted = f'=== Session: {session.session_id} ({dt_str}) ===\n{embed_text}'
+                chunks.append(
+                    TurnChunk(
+                        session_id=session.session_id,
+                        ts=turn_ts,
+                        role=turn.role,
+                        content=turn.content,
+                        embed_text=embed_text,
+                        formatted=formatted,
+                        turn_index=turn_idx,
+                    )
+                )
+
+        if not chunks:
+            return
+
+        texts = [c.embed_text for c in chunks]
+        vecs = await self.embedder.embed_documents(texts)
+        self._case_chunks[case.case_id] = list(zip(chunks, vecs, strict=True))
+
+    async def answer(self, case: EvalCase) -> SystemAnswer:
+        indexed = self._case_chunks.get(case.case_id)
+        if indexed and self.embedder is not None:
+            t0 = time.perf_counter()
+            q_vecs = await self.embedder.embed_queries([case.question])
+            q_vec = q_vecs[0]
+
+            scored: list[tuple[float, TurnChunk]] = []
+            for chunk, c_vec in indexed:
+                sim = sum(a * b for a, b in zip(q_vec, c_vec, strict=False))
+                scored.append((sim, chunk))
+
+            scored.sort(key=lambda x: x[0], reverse=True)
+            top_chunks = [ch for _, ch in scored[:20]]
+            top_chunks.sort(key=lambda ch: ch.ts)
+
+            context_text = '\n\n'.join(ch.formatted for ch in top_chunks)
+            words = context_text.split()
+            if len(words) > self.config.max_context_tokens:
+                truncated_words = words[-self.config.max_context_tokens :]
+                context_text = '... [truncated older history] ...\n' + ' '.join(truncated_words)
+
+            retrieved_sids = list(dict.fromkeys(ch.session_id for ch in top_chunks))
+
+            answer_text, ctx_tokens, rdr_tokens = await self.reader.answer(
+                question=case.question,
+                context=context_text,
+                question_ts=case.question_ts,
+            )
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            return SystemAnswer(
+                text=answer_text,
+                retrieved_session_ids=tuple(retrieved_sids),
+                context_tokens=ctx_tokens,
+                reader_tokens=rdr_tokens,
+                latency_ms=latency_ms,
+                extras={'config': self.config.name, 'indexed_turns': len(indexed)},
+            )
+
+        return await super().answer(case)
+
+    async def cleanup(self, case: EvalCase) -> None:
+        self._case_chunks.pop(case.case_id, None)
 
 
 class Bm25OnlyBaseline(RetrievalBaseline):
-    """BM25 / Full-Text Search lane only baseline with ANY_HISTORY filter."""
+    """BM25 / Full-Text Search lane only baseline indexing session turns with Okapi BM25."""
 
     def __init__(
         self,
@@ -802,6 +941,8 @@ class Bm25OnlyBaseline(RetrievalBaseline):
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         cfg = config or get_baseline_config('bm25_only')
         super().__init__(
@@ -810,7 +951,109 @@ class Bm25OnlyBaseline(RetrievalBaseline):
             reader=reader,
             uow_factory=uow_factory,
             embedder=embedder,
+            ingest_service=ingest_service,
+            clock=clock,
         )
+        self._case_indices: dict[
+            str, tuple[list[TurnChunk], list[list[str]], dict[str, int], float]
+        ] = {}
+
+    async def prepare(self, case: EvalCase) -> None:
+        if not case.sessions:
+            return
+
+        chunks: list[TurnChunk] = []
+        tokenized_corpus: list[list[str]] = []
+        for session in case.sessions:
+            dt_str = session.ts.strftime('%Y-%m-%d %H:%M:%S')
+            for turn_idx, turn in enumerate(session.turns):
+                turn_ts = session.ts + timedelta(seconds=turn_idx)
+                embed_text = f'{turn.role.capitalize()}: {turn.content}'
+                formatted = f'=== Session: {session.session_id} ({dt_str}) ===\n{embed_text}'
+                chunks.append(
+                    TurnChunk(
+                        session_id=session.session_id,
+                        ts=turn_ts,
+                        role=turn.role,
+                        content=turn.content,
+                        embed_text=embed_text,
+                        formatted=formatted,
+                        turn_index=turn_idx,
+                    )
+                )
+                tokens = re.findall(r'\w+', embed_text.lower())
+                tokenized_corpus.append(tokens)
+
+        if not chunks:
+            return
+
+        df: dict[str, int] = {}
+        for doc in tokenized_corpus:
+            for term in set(doc):
+                df[term] = df.get(term, 0) + 1
+
+        avgdl = sum(len(d) for d in tokenized_corpus) / len(tokenized_corpus)
+        self._case_indices[case.case_id] = (chunks, tokenized_corpus, df, avgdl)
+
+    async def answer(self, case: EvalCase) -> SystemAnswer:
+        indexed_data = self._case_indices.get(case.case_id)
+        if indexed_data:
+            t0 = time.perf_counter()
+            chunks, tokenized_corpus, df, avgdl = indexed_data
+            query_tokens = re.findall(r'\w+', case.question.lower())
+            n_docs = len(chunks)
+
+            scored: list[tuple[float, TurnChunk]] = []
+            k1 = 1.5
+            b = 0.75
+            for chunk, doc_tokens in zip(chunks, tokenized_corpus, strict=True):
+                dl = len(doc_tokens)
+                doc_counts: dict[str, int] = {}
+                for t in doc_tokens:
+                    doc_counts[t] = doc_counts.get(t, 0) + 1
+
+                score = 0.0
+                for q in query_tokens:
+                    n_q = df.get(q, 0)
+                    if n_q > 0:
+                        idf = math.log((n_docs - n_q + 0.5) / (n_q + 0.5) + 1.0)
+                        tf = doc_counts.get(q, 0)
+                        denom = tf + k1 * (1.0 - b + b * (dl / avgdl)) if avgdl > 0 else 1.0
+                        if denom > 0:
+                            score += idf * (tf * (k1 + 1.0)) / denom
+                scored.append((score, chunk))
+
+            scored.sort(key=lambda x: x[0], reverse=True)
+            top_chunks = [ch for _, ch in scored[:20]]
+            top_chunks.sort(key=lambda ch: ch.ts)
+
+            context_text = '\n\n'.join(ch.formatted for ch in top_chunks)
+            words = context_text.split()
+            if len(words) > self.config.max_context_tokens:
+                truncated_words = words[-self.config.max_context_tokens :]
+                context_text = '... [truncated older history] ...\n' + ' '.join(truncated_words)
+
+            retrieved_sids = list(dict.fromkeys(ch.session_id for ch in top_chunks))
+
+            answer_text, ctx_tokens, rdr_tokens = await self.reader.answer(
+                question=case.question,
+                context=context_text,
+                question_ts=case.question_ts,
+            )
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            return SystemAnswer(
+                text=answer_text,
+                retrieved_session_ids=tuple(retrieved_sids),
+                context_tokens=ctx_tokens,
+                reader_tokens=rdr_tokens,
+                latency_ms=latency_ms,
+                extras={'config': self.config.name, 'indexed_turns': len(chunks)},
+            )
+
+        return await super().answer(case)
+
+    async def cleanup(self, case: EvalCase) -> None:
+        self._case_indices.pop(case.case_id, None)
 
 
 class HybridNoTemporalBaseline(RetrievalBaseline):
@@ -823,6 +1066,8 @@ class HybridNoTemporalBaseline(RetrievalBaseline):
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         cfg = config or get_baseline_config('hybrid_no_bitemporal')
         super().__init__(
@@ -831,6 +1076,8 @@ class HybridNoTemporalBaseline(RetrievalBaseline):
             reader=reader,
             uow_factory=uow_factory,
             embedder=embedder,
+            ingest_service=ingest_service,
+            clock=clock,
         )
 
 
@@ -844,6 +1091,8 @@ class BitemporalNoDecayBaseline(RetrievalBaseline):
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         cfg = config or get_baseline_config('bitemporal_no_decay')
         super().__init__(
@@ -852,6 +1101,8 @@ class BitemporalNoDecayBaseline(RetrievalBaseline):
             reader=reader,
             uow_factory=uow_factory,
             embedder=embedder,
+            ingest_service=ingest_service,
+            clock=clock,
         )
 
 
@@ -865,6 +1116,8 @@ class FullBitemporalBaseline(RetrievalBaseline):
         reader: Reader | None = None,
         uow_factory: UnitOfWorkFactory | None = None,
         embedder: Embedder | None = None,
+        ingest_service: IngestService | None = None,
+        clock: Clock | None = None,
     ) -> None:
         cfg = config or get_baseline_config('full_bitemporal')
         super().__init__(
@@ -873,6 +1126,8 @@ class FullBitemporalBaseline(RetrievalBaseline):
             reader=reader,
             uow_factory=uow_factory,
             embedder=embedder,
+            ingest_service=ingest_service,
+            clock=clock,
         )
 
 
@@ -885,6 +1140,8 @@ def create_baseline(
     uow_factory: UnitOfWorkFactory | None = None,
     embedder: Embedder | None = None,
     orchestrator: RetrievalOrchestrator | None = None,
+    ingest_service: IngestService | None = None,
+    clock: Clock | None = None,
 ) -> MemorySystem:
     """Instantiate a baseline MemorySystem by name or alias."""
     norm = name.strip().lower()
@@ -896,6 +1153,8 @@ def create_baseline(
             uow_factory=uow_factory,
             embedder=embedder,
             orchestrator=orchestrator,
+            ingest_service=ingest_service,
+            clock=clock,
         )
     if norm in ('bm25_only', 'bm25'):
         return Bm25OnlyBaseline(
@@ -903,6 +1162,8 @@ def create_baseline(
             uow_factory=uow_factory,
             embedder=embedder,
             orchestrator=orchestrator,
+            ingest_service=ingest_service,
+            clock=clock,
         )
     if norm in ('hybrid_no_bitemporal', 'hybrid'):
         return HybridNoTemporalBaseline(
@@ -910,6 +1171,8 @@ def create_baseline(
             uow_factory=uow_factory,
             embedder=embedder,
             orchestrator=orchestrator,
+            ingest_service=ingest_service,
+            clock=clock,
         )
     if norm in ('bitemporal_no_decay', 'tmem_no_decay'):
         return BitemporalNoDecayBaseline(
@@ -917,6 +1180,8 @@ def create_baseline(
             uow_factory=uow_factory,
             embedder=embedder,
             orchestrator=orchestrator,
+            ingest_service=ingest_service,
+            clock=clock,
         )
     if norm in ('full_bitemporal', 'tmem'):
         return FullBitemporalBaseline(
@@ -924,6 +1189,8 @@ def create_baseline(
             uow_factory=uow_factory,
             embedder=embedder,
             orchestrator=orchestrator,
+            ingest_service=ingest_service,
+            clock=clock,
         )
 
     # Specific ablation name or custom baseline
@@ -934,4 +1201,6 @@ def create_baseline(
         reader=reader,
         uow_factory=uow_factory,
         embedder=embedder,
+        ingest_service=ingest_service,
+        clock=clock,
     )

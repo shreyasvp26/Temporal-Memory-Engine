@@ -70,10 +70,11 @@ class CachedEmbedder(Embedder):
         return None
 
     def _store(self, key: str, kind: str, vector: list[float]) -> None:
-        self._mem_cache[key] = vector
+        float_vec = [float(x) for x in vector]
+        self._mem_cache[key] = float_vec
         if self._cache_db_path is not None:
             now_iso = datetime.now(UTC).isoformat()
-            vec_json = json.dumps(vector)
+            vec_json = json.dumps(float_vec)
             with sqlite3.connect(self._cache_db_path) as conn:
                 conn.execute(
                     """
