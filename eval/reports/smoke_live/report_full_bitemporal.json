@@ -27,10 +27,10 @@
   "paired_ci_accuracy": null,
   "paired_ci_f1": null,
   "latency_stats": {
-    "p50": 0.0,
-    "p95": 0.0,
-    "p99": 0.0,
-    "mean": 0.0
+    "p50": 13728.573124972172,
+    "p95": 13728.573124972172,
+    "p99": 13728.573124972172,
+    "mean": 13728.573124972172
   },
   "baseline_latency_stats": null,
   "item_results": [
@@ -39,18 +39,18 @@
       "question_type": "single-session-user",
       "question": "What programming language does the user primarily work with?",
       "gold_answer": "Python",
-      "system_answer": "ERROR: Gemini request timed out after 30.0s: ",
+      "system_answer": "The information is not available.",
       "judge_correct": false,
       "token_f1": 0.0,
       "exact_match": false,
-      "latency_ms": 0.0,
+      "latency_ms": 13728.573124972172,
       "is_abstention": false,
       "baseline_answer": null,
       "baseline_judge_correct": null,
       "baseline_token_f1": null,
       "baseline_exact_match": null,
       "baseline_latency_ms": null,
-      "error": "Gemini request timed out after 30.0s: "
+      "error": null
     }
   ],
   "metadata": {}

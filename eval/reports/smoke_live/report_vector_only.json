@@ -1,0 +1,57 @@
+{
+  "benchmark_name": "LongMemEval",
+  "system_name": "vector_only",
+  "baseline_name": null,
+  "total_questions": 1,
+  "overall_accuracy": 0.0,
+  "overall_token_f1": 0.0,
+  "overall_exact_match": 0.0,
+  "abstention_accuracy": 1.0,
+  "category_metrics": {
+    "single-session-user": {
+      "category": "single-session-user",
+      "count": 1,
+      "accuracy": 0.0,
+      "token_f1": 0.0,
+      "exact_match": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "baseline_accuracy": null,
+      "baseline_token_f1": null,
+      "baseline_exact_match": null,
+      "paired_ci_diff": null,
+      "paired_ci_low": null,
+      "paired_ci_high": null
+    }
+  },
+  "paired_ci_accuracy": null,
+  "paired_ci_f1": null,
+  "latency_stats": {
+    "p50": 17799.501915986184,
+    "p95": 17799.501915986184,
+    "p99": 17799.501915986184,
+    "mean": 17799.501915986184
+  },
+  "baseline_latency_stats": null,
+  "item_results": [
+    {
+      "question_id": "ssu_001",
+      "question_type": "single-session-user",
+      "question": "What programming language does the user primarily work with?",
+      "gold_answer": "Python",
+      "system_answer": "The information is not available in the context.",
+      "judge_correct": false,
+      "token_f1": 0.0,
+      "exact_match": false,
+      "latency_ms": 17799.501915986184,
+      "is_abstention": false,
+      "baseline_answer": null,
+      "baseline_judge_correct": null,
+      "baseline_token_f1": null,
+      "baseline_exact_match": null,
+      "baseline_latency_ms": null,
+      "error": null
+    }
+  ],
+  "metadata": {}
+}

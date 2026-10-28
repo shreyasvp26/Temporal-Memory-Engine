@@ -245,7 +245,7 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
         model_fast=model,
         model_synth=model,
     )
-    fallback_model = 'gemini-2.0-flash-lite'
+    fallback_model = 'gemini-3.5-flash-lite'
     fallback_client: GeminiClient = GeminiClient(
         api_key=api_key,
         model_fast=fallback_model,
@@ -443,7 +443,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = parse_args(argv)
     except SystemExit as exc:
-        return int(exc.code) if isinstance(exc.code, int) else 2
+        return exc.code if isinstance(exc.code, int) else 2
 
     if args.prepare_sample:
         dest = Path(args.dataset) if args.dataset else Path('data/longmemeval_stratified_30.json')
