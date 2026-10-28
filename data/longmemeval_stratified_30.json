@@ -1,0 +1,699 @@
+[
+  {
+    "question_id": "ssu_001",
+    "question_type": "single-session-user",
+    "question": "What programming language does the user primarily work with?",
+    "gold_answer": "Python",
+    "question_date": "2024-03-15T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_001_s1",
+        "date": "2024-03-15T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I mostly code in Python at work. Can you help me with a pandas question?", "has_answer": true},
+          {"role": "assistant", "content": "Of course! What is your pandas question?", "has_answer": false},
+          {"role": "user", "content": "How do I drop duplicates from a DataFrame?", "has_answer": false},
+          {"role": "assistant", "content": "You can use df.drop_duplicates() to remove duplicate rows.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_001_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ssu_002",
+    "question_type": "single-session-user",
+    "question": "What city does the user live in?",
+    "gold_answer": "Seattle",
+    "question_date": "2024-04-10T14:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_002_s1",
+        "date": "2024-04-10T13:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I'm in Seattle and the rain never stops. Any tips for staying motivated when working from home?", "has_answer": true},
+          {"role": "assistant", "content": "Living in Seattle can be challenging in winter. Setting a daily routine and getting outside during lunch breaks can really help.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_002_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ssu_003",
+    "question_type": "single-session-user",
+    "question": "What is the user's job title?",
+    "gold_answer": "Senior Software Engineer",
+    "question_date": "2024-05-20T11:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_003_s1",
+        "date": "2024-05-20T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "As a Senior Software Engineer, I often need to mentor junior devs. How should I structure my first 1:1 with a new hire?", "has_answer": true},
+          {"role": "assistant", "content": "For a first 1:1, focus on getting to know the person, understanding their goals, and setting clear expectations.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_003_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ssu_004",
+    "question_type": "single-session-user",
+    "question": "What is the user's cat's name?",
+    "gold_answer": "Mochi",
+    "question_date": "2024-06-01T09:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_004_s1",
+        "date": "2024-06-01T08:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "My cat Mochi has been acting weird lately. She keeps hiding under the bed.", "has_answer": true},
+          {"role": "assistant", "content": "Cats often hide when they feel stressed or unwell. Has there been any recent changes in the household?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_004_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ssu_005",
+    "question_type": "single-session-user",
+    "question": "What university did the user graduate from?",
+    "gold_answer": "UC Berkeley",
+    "question_date": "2024-07-05T15:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_005_s1",
+        "date": "2024-07-05T14:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I graduated from UC Berkeley with a CS degree in 2018. My alumni network has been really useful for job searching.", "has_answer": true},
+          {"role": "assistant", "content": "UC Berkeley has an excellent alumni network. Have you tried reaching out through LinkedIn?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_005_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ssu_006",
+    "question_type": "single-session-user",
+    "question": "What dietary restriction does the user have?",
+    "gold_answer": "vegetarian",
+    "question_date": "2024-08-12T12:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ssu_006_s1",
+        "date": "2024-08-12T11:30:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I'm vegetarian and I'm trying to find good protein sources. Any suggestions?", "has_answer": true},
+          {"role": "assistant", "content": "Great protein sources for vegetarians include lentils, chickpeas, tofu, tempeh, edamame, and Greek yogurt.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ssu_006_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_001",
+    "question_type": "multi-session",
+    "question": "What project is the user currently working on at their company?",
+    "gold_answer": "a recommendation engine",
+    "question_date": "2024-09-20T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_001_s1",
+        "date": "2024-09-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We just kicked off a new recommendation engine project at my company.", "has_answer": true},
+          {"role": "assistant", "content": "Exciting! What kind of recommendation system are you building?", "has_answer": false},
+          {"role": "user", "content": "It's collaborative filtering for our e-commerce platform.", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ms_001_s2",
+        "date": "2024-09-10T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "The recommendation engine project is progressing well. We finished the data pipeline.", "has_answer": false},
+          {"role": "assistant", "content": "That's great progress! What's the next milestone?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_001_s1", "ms_001_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_002",
+    "question_type": "multi-session",
+    "question": "What hobby did the user mention they recently picked up?",
+    "gold_answer": "pottery",
+    "question_date": "2024-10-15T14:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_002_s1",
+        "date": "2024-09-25T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I've been looking for a new creative outlet.", "has_answer": false},
+          {"role": "assistant", "content": "What kinds of things do you enjoy? Art, music, writing?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ms_002_s2",
+        "date": "2024-10-05T11:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I decided to try pottery! Had my first class last weekend and loved it.", "has_answer": true},
+          {"role": "assistant", "content": "Pottery is a wonderful creative hobby. Are you doing wheel throwing or hand-building?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_002_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_003",
+    "question_type": "multi-session",
+    "question": "Which conference did the user say they were planning to attend?",
+    "gold_answer": "NeurIPS",
+    "question_date": "2024-11-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_003_s1",
+        "date": "2024-10-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I submitted a paper to NeurIPS this year.", "has_answer": true},
+          {"role": "assistant", "content": "That's great! When do you find out if it's accepted?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ms_003_s2",
+        "date": "2024-10-20T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "My paper got accepted! I'll be attending NeurIPS in December.", "has_answer": true},
+          {"role": "assistant", "content": "Congratulations! That's a prestigious conference. Where is it being held this year?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_003_s1", "ms_003_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_004",
+    "question_type": "multi-session",
+    "question": "What programming language is the user learning?",
+    "gold_answer": "Rust",
+    "question_date": "2024-08-30T15:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_004_s1",
+        "date": "2024-07-15T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I want to learn a systems programming language. Should I go with C++ or Rust?", "has_answer": false},
+          {"role": "assistant", "content": "Both are great choices. Rust offers memory safety guarantees without garbage collection.", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ms_004_s2",
+        "date": "2024-08-01T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I started learning Rust! Went through the first few chapters of the Rust Book.", "has_answer": true},
+          {"role": "assistant", "content": "The Rust Book is an excellent resource. How are you finding the ownership concept?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_004_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_005",
+    "question_type": "multi-session",
+    "question": "What marathon time goal did the user set for themselves?",
+    "gold_answer": "under 4 hours",
+    "question_date": "2024-12-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_005_s1",
+        "date": "2024-10-10T08:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I signed up for a marathon next spring. It'll be my first one.", "has_answer": false},
+          {"role": "assistant", "content": "Congratulations on signing up! Do you have a time goal in mind?", "has_answer": false},
+          {"role": "user", "content": "I'd love to finish under 4 hours. Is that realistic for a beginner?", "has_answer": true}
+        ]
+      },
+      {
+        "session_id": "ms_005_s2",
+        "date": "2024-11-15T08:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Training is going well! Still aiming for that sub-4-hour marathon finish.", "has_answer": false},
+          {"role": "assistant", "content": "You're making great progress! What's your current weekly mileage?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_005_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ms_006",
+    "question_type": "multi-session",
+    "question": "What database technology is the user migrating their application to?",
+    "gold_answer": "PostgreSQL",
+    "question_date": "2024-09-25T11:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ms_006_s1",
+        "date": "2024-08-20T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We are planning to migrate our application database. Currently on MySQL.", "has_answer": false},
+          {"role": "assistant", "content": "What are your key requirements for the new database?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ms_006_s2",
+        "date": "2024-09-05T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We decided to go with PostgreSQL for the migration. Starting the planning phase now.", "has_answer": true},
+          {"role": "assistant", "content": "PostgreSQL is an excellent choice. Are you using any ORMs or migrating raw SQL?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ms_006_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_001",
+    "question_type": "knowledge-update",
+    "question": "What company does the user currently work for?",
+    "gold_answer": "Stripe",
+    "question_date": "2024-11-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_001_s1",
+        "date": "2024-06-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I work at Acme Corp as a software engineer. The work culture is okay.", "has_answer": false},
+          {"role": "assistant", "content": "How long have you been at Acme Corp?", "has_answer": false},
+          {"role": "user", "content": "About 2 years. But I'm starting to look for new opportunities.", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_001_s2",
+        "date": "2024-10-15T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Exciting news! I just accepted an offer from Stripe. Starting next month!", "has_answer": true},
+          {"role": "assistant", "content": "Congratulations! Stripe is a fantastic company. What role are you taking on?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_001_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_002",
+    "question_type": "knowledge-update",
+    "question": "Where does the user currently live?",
+    "gold_answer": "Austin",
+    "question_date": "2024-10-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_002_s1",
+        "date": "2024-01-15T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Living in San Francisco is expensive. I've been here for 5 years.", "has_answer": false},
+          {"role": "assistant", "content": "SF is indeed pricey. Are you thinking about relocating?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_002_s2",
+        "date": "2024-09-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Big update: I moved to Austin! Much better cost of living and I love the tech scene here.", "has_answer": true},
+          {"role": "assistant", "content": "Austin is a great city with a booming tech community. How are you liking it so far?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_002_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_003",
+    "question_type": "knowledge-update",
+    "question": "What is the user's relationship status?",
+    "gold_answer": "married",
+    "question_date": "2024-12-15T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_003_s1",
+        "date": "2024-02-14T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Today is Valentine's Day and I'm single. Got any tips for a self-care day?", "has_answer": false},
+          {"role": "assistant", "content": "Definitely! How about a relaxing spa day or cooking your favorite meal?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_003_s2",
+        "date": "2024-11-20T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I got married last weekend! Best day of my life. We had an intimate ceremony.", "has_answer": true},
+          {"role": "assistant", "content": "Congratulations on your wedding! How was the honeymoon?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_003_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_004",
+    "question_type": "knowledge-update",
+    "question": "What is the user's current primary programming language?",
+    "gold_answer": "TypeScript",
+    "question_date": "2024-10-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_004_s1",
+        "date": "2024-03-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I've been writing Java for 6 years. It's reliable but can be verbose.", "has_answer": false},
+          {"role": "assistant", "content": "Java is very mature. Are you working on backend services?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_004_s2",
+        "date": "2024-08-20T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "My team switched our entire stack to TypeScript and Node.js. It's been a great change, very expressive.", "has_answer": true},
+          {"role": "assistant", "content": "TypeScript is excellent for large codebases. How has the team adjusted to the transition?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_004_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_005",
+    "question_type": "knowledge-update",
+    "question": "What diet is the user currently following?",
+    "gold_answer": "keto",
+    "question_date": "2024-10-15T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_005_s1",
+        "date": "2024-04-10T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I've been vegan for 3 years and really love it for health and ethical reasons.", "has_answer": false},
+          {"role": "assistant", "content": "Veganism is a great lifestyle choice. What are some of your favorite plant-based meals?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_005_s2",
+        "date": "2024-10-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I switched to keto about a month ago after my doctor recommended it for weight management.", "has_answer": true},
+          {"role": "assistant", "content": "Keto can be effective for weight management. Are you tracking your macros?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_005_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "ku_006",
+    "question_type": "knowledge-update",
+    "question": "What car does the user drive?",
+    "gold_answer": "Tesla Model 3",
+    "question_date": "2024-11-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "ku_006_s1",
+        "date": "2024-01-20T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "My Honda Civic just hit 100k miles. It's still running great!", "has_answer": false},
+          {"role": "assistant", "content": "Honda Civics are known for their reliability. Are you planning to keep it longer?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "ku_006_s2",
+        "date": "2024-10-05T10:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I just traded in the Civic and got a Tesla Model 3. The autopilot feature is incredible!", "has_answer": true},
+          {"role": "assistant", "content": "Tesla Model 3 is a great choice! How are you finding the charging infrastructure?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["ku_006_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_001",
+    "question_type": "temporal-reasoning",
+    "question": "How long ago did the user start their current job?",
+    "gold_answer": "about 8 months ago",
+    "question_date": "2024-11-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_001_s1",
+        "date": "2024-03-05T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Today is my first day at my new job as a data scientist at HealthTech Inc. Super nervous but excited!", "has_answer": true},
+          {"role": "assistant", "content": "First days are always exciting and nerve-wracking! Good luck with your new role.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_001_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_002",
+    "question_type": "temporal-reasoning",
+    "question": "How many months passed between the user's first mention of their startup idea and when they launched it?",
+    "gold_answer": "5 months",
+    "question_date": "2024-12-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_002_s1",
+        "date": "2024-05-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I've been brainstorming a startup idea around AI-powered tutoring. Still in ideation phase.", "has_answer": false},
+          {"role": "assistant", "content": "AI tutoring is a growing space. What subject areas are you targeting?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "tr_002_s2",
+        "date": "2024-10-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We launched the AI tutoring platform today! It's finally live with paying customers.", "has_answer": true},
+          {"role": "assistant", "content": "Congratulations on the launch! How many customers signed up on day one?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_002_s1", "tr_002_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_003",
+    "question_type": "temporal-reasoning",
+    "question": "When did the user start learning Spanish?",
+    "gold_answer": "January 2024",
+    "question_date": "2024-09-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_003_s1",
+        "date": "2024-01-08T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "New year, new goal: I started learning Spanish this week! Using Duolingo every day.", "has_answer": true},
+          {"role": "assistant", "content": "Spanish is a wonderful language to learn. What is your motivation for learning it?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_003_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_004",
+    "question_type": "temporal-reasoning",
+    "question": "How long did the user's home renovation project take?",
+    "gold_answer": "3 months",
+    "question_date": "2024-11-15T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_004_s1",
+        "date": "2024-06-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We started the kitchen renovation today. Contractors are tearing everything out.", "has_answer": false},
+          {"role": "assistant", "content": "Kitchen renovations can be disruptive but the results are worth it!", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "tr_004_s2",
+        "date": "2024-09-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "The kitchen renovation is finally done! Took us the whole 3 months but it looks amazing now.", "has_answer": true},
+          {"role": "assistant", "content": "Congratulations! Kitchen renovations are a major undertaking.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_004_s1", "tr_004_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_005",
+    "question_type": "temporal-reasoning",
+    "question": "How many years of experience does the user have with machine learning?",
+    "gold_answer": "4 years",
+    "question_date": "2024-07-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_005_s1",
+        "date": "2024-07-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I've been working in machine learning since 2020. It's been quite a journey learning the field.", "has_answer": true},
+          {"role": "assistant", "content": "Four years is a solid foundation! What areas of ML do you specialize in?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_005_s1"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "tr_006",
+    "question_type": "temporal-reasoning",
+    "question": "In what month did the user's book club finish reading their longest novel?",
+    "gold_answer": "February",
+    "question_date": "2024-04-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "tr_006_s1",
+        "date": "2024-01-10T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "Our book club started reading War and Peace this month. It's 1200 pages!", "has_answer": false},
+          {"role": "assistant", "content": "That's an ambitious read! How many people are in your book club?", "has_answer": false}
+        ]
+      },
+      {
+        "session_id": "tr_006_s2",
+        "date": "2024-02-28T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "We finally finished War and Peace! Took us the whole month of February but so worth it.", "has_answer": true},
+          {"role": "assistant", "content": "Finishing War and Peace is quite an accomplishment! What did your book club think?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": ["tr_006_s2"],
+    "is_abstention": false
+  },
+  {
+    "question_id": "abs_001",
+    "question_type": "abstention",
+    "question": "What is the user's mother's maiden name?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-09-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_001_s1",
+        "date": "2024-08-20T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I'm planning a family reunion for next summer.", "has_answer": false},
+          {"role": "assistant", "content": "Family reunions are great! How many family members are you expecting?", "has_answer": false},
+          {"role": "user", "content": "About 30 people. It's going to be at my parents' farm.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  },
+  {
+    "question_id": "abs_002",
+    "question_type": "abstention",
+    "question": "What is the user's annual salary?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-10-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_002_s1",
+        "date": "2024-09-15T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I got a raise at work! Very happy about it.", "has_answer": false},
+          {"role": "assistant", "content": "Congratulations on the raise! Hard work pays off.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  },
+  {
+    "question_id": "abs_003",
+    "question_type": "abstention",
+    "question": "What is the user's home address?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-08-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_003_s1",
+        "date": "2024-07-20T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I just moved into a new apartment last week. Still unpacking boxes.", "has_answer": false},
+          {"role": "assistant", "content": "Moving is always exhausting! Are you liking the new place?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  },
+  {
+    "question_id": "abs_004",
+    "question_type": "abstention",
+    "question": "What medications does the user take?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-11-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_004_s1",
+        "date": "2024-10-15T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I had a doctor's appointment today for my annual checkup.", "has_answer": false},
+          {"role": "assistant", "content": "It's great that you're keeping up with your health. How did the checkup go?", "has_answer": false},
+          {"role": "user", "content": "All good! The doctor said my health is in great shape.", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  },
+  {
+    "question_id": "abs_005",
+    "question_type": "abstention",
+    "question": "What is the user's bank account number?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-07-01T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_005_s1",
+        "date": "2024-06-20T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I'm trying to get better at budgeting and personal finance.", "has_answer": false},
+          {"role": "assistant", "content": "Budgeting is a great skill to develop. Have you tried using apps like YNAB or Mint?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  },
+  {
+    "question_id": "abs_006",
+    "question_type": "abstention",
+    "question": "What is the user's blood type?",
+    "gold_answer": "The information is not available.",
+    "question_date": "2024-09-15T10:00:00+00:00",
+    "sessions": [
+      {
+        "session_id": "abs_006_s1",
+        "date": "2024-09-01T09:00:00+00:00",
+        "turns": [
+          {"role": "user", "content": "I donated blood for the first time last month. It was a great experience.", "has_answer": false},
+          {"role": "assistant", "content": "Blood donation is such a valuable act! Are you planning to do it regularly?", "has_answer": false}
+        ]
+      }
+    ],
+    "evidence_session_ids": [],
+    "is_abstention": true
+  }
+]
