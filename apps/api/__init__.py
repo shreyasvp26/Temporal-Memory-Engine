@@ -4,6 +4,7 @@ from .auth import AuthUser, JwtVerifier, current_user, get_current_user
 from .deps import AppContainer, get_container
 from .main import create_app
 from .rate_limit import RateLimiter, rate_limit
+from .ui import ui_router
 
 __all__ = [
     'AppContainer',
@@ -15,4 +16,5 @@ __all__ = [
     'get_container',
     'get_current_user',
     'rate_limit',
+    'ui_router',
 ]

@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Second-Brain // Bitemporal Memory &amp; Observability Workbench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-canvas: #09090B;
+      --bg-surface: #121215;
+      --bg-card: #18181B;
+      --bg-card-hover: #222226;
+      --bg-input: #121215;
+      --border-subtle: #27272A;
+      --border-hover: #3F3F46;
+      --border-active: #52525B;
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --brand-indigo: #6366F1;
+      --brand-indigo-hover: #4F46E5;
+
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --emerald-text: #34D399;
+      --emerald-border: rgba(16, 185, 129, 0.3);
+
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --amber-text: #FBBF24;
+      --amber-border: rgba(245, 158, 11, 0.3);
+
+      --rose-bg: rgba(244, 63, 94, 0.12);
+      --rose-text: #FB7185;
+      --rose-border: rgba(244, 63, 94, 0.3);
+
+      --indigo-pill-bg: rgba(99, 102, 241, 0.15);
+      --indigo-pill-text: #A5B4FC;
+      --indigo-pill-border: rgba(99, 102, 241, 0.35);
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+
+    /* Top Command & Telemetry Bar */
+    .top-bar {
+      height: 48px;
+      min-height: 48px;
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 16px;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge .accent {
+      color: var(--brand-indigo);
+    }
+
+    .ready-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 2px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .dot-online {
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    .dot-offline {
+      background: #F43F5E;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+    }
+
+    .persona-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .persona-select {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .persona-select:focus {
+      border-color: var(--brand-indigo);
+    }
+
+    .actions-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+      outline: none;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .btn-primary {
+      background: var(--brand-indigo);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--brand-indigo-hover);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.1);
+      color: #FB7185;
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(244, 63, 94, 0.2);
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-icon:hover {
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
+    /* Main Split View */
+    .workbench-split {
+      display: flex;
+      height: calc(100vh - 48px);
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* Left Pane: 42% */
+    .left-pane {
+      width: 42%;
+      min-width: 420px;
+      max-width: 680px;
+      border-right: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* Right Pane: 58% */
+    .right-pane {
+      flex: 1;
+      min-width: 500px;
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Left Pane Mode Header */
+    .pane-header {
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mode-switcher-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .segmented-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .segmented-btn.active {
+      background: var(--border-hover);
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .temporal-anchor-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+
+    .temporal-anchor-box label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .temporal-anchor-input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      outline: none;
+      color-scheme: dark;
+    }
+
+    /* Quick Fire Prompt Chips */
+    .quick-chips-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .quick-chips-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      color: var(--text-secondary);
+      padding: 3px 10px;
+      font-size: 11px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
+    /* Chat Messages Stream */
+    .chat-messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 100%;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .user-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      align-self: flex-end;
+      max-width: 90%;
+      word-break: break-word;
+    }
+
+    .assistant-bubble {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      align-self: flex-start;
+      width: 100%;
+      position: relative;
+    }
+
+    .assistant-text {
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .streaming-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 14px;
+      background: var(--brand-indigo);
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Citation Pills */
+    .citation-pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--indigo-pill-bg);
+      color: var(--indigo-pill-text);
+      border: 1px solid var(--indigo-pill-border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      margin: 0 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+      vertical-align: baseline;
+    }
+    .citation-pill:hover {
+      background: rgba(99, 102, 241, 0.3);
+      border-color: #818CF8;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+    }
+
+    /* X-Ray Telemetry Card */
+    .xray-container {
+      margin-top: 10px;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .xray-header {
+      padding: 6px 10px;
+      background: rgba(24, 24, 27, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .xray-header:hover {
+      background: var(--bg-card);
+    }
+
+    .xray-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-mono {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .xray-body {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .lanes-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .lane-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 6px;
+      text-align: center;
+    }
+    .lane-name {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lane-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .xray-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* Note Ingestion Form */
+    .ingest-form-container {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .form-input, .form-textarea {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 8px 12px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--brand-indigo);
+    }
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .ingest-result-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Chat Input Bar */
+    .chat-input-bar {
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .chat-textarea {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 8px 12px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+      max-height: 120px;
+      min-height: 38px;
+      transition: border-color 0.15s;
+    }
+    .chat-textarea:focus {
+      border-color: var(--brand-indigo);
+    }
+
+    .chat-input-hints {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    /* Right Pane Header & Filter Bar */
+    .right-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tabs-and-counters-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .view-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .view-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .view-tab-btn.active {
+      background: var(--bg-card);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .view-tab-btn:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    .counters-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    /* Status Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-active {
+      background: var(--emerald-bg);
+      color: var(--emerald-text);
+      border: 1px solid var(--emerald-border);
+    }
+
+    .pill-superseded {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+      border: 1px solid var(--amber-border);
+    }
+
+    .pill-retracted {
+      background: var(--rose-bg);
+      color: var(--rose-text);
+      border: 1px solid var(--rose-border);
+    }
+
+    .filter-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-select, .search-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 4px 10px;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+    .filter-select {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 150px;
+    }
+    .filter-select:focus, .search-input:focus {
+      border-color: var(--brand-indigo);
+    }
+
+    /* Right Pane Content Area */
+    .tab-content-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      position: relative;
+    }
+
+    /* Tab 1: Bitemporal Timeline (Swimlanes) */
+    .timeline-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .timeline-axis {
+      position: relative;
+      height: 28px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-left: 140px; /* offset for predicate column */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .swimlanes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .swimlane-row {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      gap: 12px;
+    }
+
+    .swimlane-label {
+      width: 128px;
+      min-width: 128px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .swimlane-track {
+      flex: 1;
+      height: 38px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .interval-bar {
+      position: absolute;
+      height: 26px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      transition: all 0.15s;
+      z-index: 2;
+    }
+    .interval-bar:hover {
+      filter: brightness(1.2);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .bar-active {
+      background: var(--emerald-bg);
+      color: var(--emerald-text);
+      border: 1px solid var(--emerald-border);
+    }
+
+    .bar-superseded {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+      border: 1px solid var(--amber-border);
+    }
+
+    .bar-retracted {
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(244, 63, 94, 0.15),
+        rgba(244, 63, 94, 0.15) 6px,
+        rgba(244, 63, 94, 0.05) 6px,
+        rgba(244, 63, 94, 0.05) 12px
+      );
+      color: var(--rose-text);
+      border: 1px solid var(--rose-border);
+    }
+
+    .now-marker-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      border-left: 1px dashed rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Tab 2: Fact Ledger Cards */
+    .fact-cards-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .fact-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s;
+    }
+    .fact-card:hover {
+      border-color: var(--border-hover);
+    }
+    .fact-card.highlight-pulse {
+      border-color: var(--brand-indigo) !important;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+      animation: pulseHighlight 2s ease-out;
+    }
+    @keyframes pulseHighlight {
+      0% { box-shadow: 0 0 16px rgba(99, 102, 241, 0.8); }
+      100% { box-shadow: 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .fact-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .fact-statement {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .fact-header-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .badge-predicate {
+      background: rgba(99, 102, 241, 0.1);
+      color: #A5B4FC;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    .badge-origin {
+      background: rgba(161, 161, 170, 0.1);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Bitemporal Monospace Matrix */
+    .bitemporal-matrix {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .matrix-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matrix-label {
+      width: 105px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .matrix-val {
+      color: var(--text-primary);
+    }
+
+    .fact-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Tab 3: Context Assembler Output */
+    .context-viewer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .context-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .context-code-block {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 70vh;
+    }
+
+    /* Slide-Over Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .slide-over-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 520px;
+      max-width: 90vw;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-subtle);
+      z-index: 101;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.7);
+    }
+    .slide-over-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      height: 48px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+    }
+
+    .meta-property-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .meta-key {
+      color: var(--text-muted);
+    }
+    .meta-val {
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+
+    .evidence-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--brand-indigo);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .evidence-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .evidence-quote {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .lineage-nodes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lineage-node-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s;
+    }
+    .lineage-node-card:hover {
+      border-color: var(--brand-indigo);
+      background: var(--bg-card-hover);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 110;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      width: 480px;
+      max-width: 100%;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      height: 48px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-footer {
+      height: 48px;
+      padding: 0 16px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--bg-card);
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      animation: toastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-success {
+      border-left: 3px solid #10B981;
+    }
+    .toast-error {
+      border-left: 3px solid #F43F5E;
+    }
+    .toast-info {
+      border-left: 3px solid var(--brand-indigo);
+    }
+    @keyframes toastIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Telemetry & Command Bar (48px) -->
+  <header class="top-bar">
+    <div class="brand-section">
+      <div class="brand-badge">
+        <span class="accent">//</span> SECOND-BRAIN
+        <span style="color: var(--text-muted); font-weight: 400;">BITEMPORAL ENGINE v1.0</span>
+      </div>
+      <div class="ready-pill" id="ready-pill" title="Readiness &amp; Latency">
+        <span class="status-dot dot-online" id="ready-dot"></span>
+        <span id="ready-text">PG16 + HNSW READY</span>
+      </div>
+    </div>
+
+    <!-- Tenant Switcher -->
+    <div class="persona-section">
+      <label for="tenant-select" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">TENANT:</label>
+      <select id="tenant-select" class="persona-select" onchange="handleTenantChange(this.value)">
+        <option value="00000000-0000-0000-0000-000000000001">Tenant A (Primary Demo — 0000...0001)</option>
+        <option value="00000000-0000-0000-0000-000000000002">Tenant B (RLS Isolation Test — 0000...0002)</option>
+      </select>
+    </div>
+
+    <!-- Top Action Controls -->
+    <div class="actions-section">
+      <button class="btn btn-secondary" id="btn-seed" onclick="seedScenario()" title="Seed 3-stage Bangalore, Delhi, Pune bitemporal scenario">
+        <span>▶</span> Seed Scenario (S5 + S10)
+      </button>
+      <button class="btn btn-secondary" id="btn-flush" onclick="flushJobs()" title="Process pending queued extract jobs">
+        <span>⚡</span> Flush Outbox (run-once)
+      </button>
+      <button class="btn btn-secondary" id="btn-export" onclick="exportProfile()" title="Export GDPR memories and audit logs">
+        <span>⬇</span> GDPR Export
+      </button>
+      <button class="btn btn-danger" id="btn-purge" onclick="purgeTenant()" title="Permanently delete all memories for current tenant">
+        <span>🗑</span> Purge Tenant
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport Split (100vh - 48px) -->
+  <main class="workbench-split">
+
+    <!-- LEFT PANE: Grounded Copilot & Ingestion Console (42%) -->
+    <section class="left-pane">
+      <div class="pane-header">
+        <div class="mode-switcher-row">
+          <div class="segmented-control">
+            <button class="segmented-btn active" id="tab-copilot" onclick="switchLeftMode('copilot')">💬 Grounded Query (SSE)</button>
+            <button class="segmented-btn" id="tab-ingest" onclick="switchLeftMode('ingest')">📝 Ingest Raw Note</button>
+          </div>
+
+          <div class="temporal-anchor-box" title="Temporal Anchor Override: backdate notes or test time-travel queries">
+            <label for="temporal-anchor">Anchor:</label>
+            <input type="datetime-local" id="temporal-anchor" class="temporal-anchor-input" />
+            <button class="btn-icon" onclick="clearTemporalAnchor()" title="Reset to current real time">✕</button>
+          </div>
+        </div>
+
+        <!-- Quick Fire Engineering Chips -->
+        <div class="quick-chips-row" id="quick-chips-bar">
+          <button class="chip-btn" onclick="applyQuickPrompt('Where do I live now vs. where did I live in 2024?')">📍 Bangalore vs. Pune</button>
+          <button class="chip-btn" onclick="applyQuickPrompt('Where was I living and working in June 2025?')">⏱ AS_OF June 2025</button>
+          <button class="chip-btn" onclick="applyQuickPrompt('What tech stack do I use and what is my diet?')">⚡ Multi-fact state</button>
+          <button class="chip-btn" onclick="applyQuickPrompt('What is my passport number?')">🛡 Abstention test</button>
+        </div>
+      </div>
+
+      <!-- COPILOT VIEW -->
+      <div id="copilot-container" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <!-- Chat Stream Log -->
+        <div class="chat-messages-container" id="chat-stream-log">
+          <div class="message-card">
+            <div class="message-header">
+              <span>SYSTEM</span>
+              <span>READY</span>
+            </div>
+            <div class="assistant-bubble" style="color: var(--text-secondary); font-size: 12px;">
+              Temporal Memory Engine copilot initialized. Ask temporal questions against your memory graph or test out-of-order ingestion.
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="chat-input-bar">
+          <div class="chat-input-wrapper">
+            <textarea
+              id="chat-input"
+              class="chat-textarea"
+              placeholder="Ask a temporal question (e.g., 'Where was I living in June 2025?')..."
+              rows="1"
+              onkeydown="handleChatKeydown(event)"
+            ></textarea>
+            <button class="btn btn-primary" id="btn-send-chat" onclick="submitChatQuery()">
+              Send ↵
+            </button>
+          </div>
+          <div class="chat-input-hints">
+            <span>Enter to send, Shift+Enter for newline</span>
+            <span id="chat-conversation-id">Session: new</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTE INGESTION VIEW -->
+      <div id="ingest-container" class="ingest-form-container" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">DOCUMENT / NOTE TITLE (OPTIONAL)</label>
+          <input type="text" id="note-title" class="form-input" placeholder="e.g. Relocation &amp; Career Update" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">RAW NOTE CONTENT</label>
+          <textarea
+            id="note-content"
+            class="form-textarea"
+            placeholder="Type raw document content. E.g. 'In Jan 2025 I relocated to Delhi and joined Acme Corp as Staff Engineer...'"
+          ></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btn-submit-note" onclick="submitNoteIngest()">
+          📝 Ingest Note (POST /v1/notes)
+        </button>
+
+        <div id="ingest-result" class="ingest-result-card" style="display: none;">
+          <!-- Dynamically populated on ingestion response -->
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: Multi-View Bitemporal Memory Inspector (58%) -->
+    <section class="right-pane">
+      <div class="right-header">
+        <div class="tabs-and-counters-row">
+          <div class="view-tabs">
+            <button class="view-tab-btn active" id="tab-timeline" onclick="switchRightTab('timeline')">
+              📊 Bitemporal Timeline (Swimlanes)
+            </button>
+            <button class="view-tab-btn" id="tab-ledger" onclick="switchRightTab('ledger')">
+              🗂 Fact Ledger (Cards)
+            </button>
+            <button class="view-tab-btn" id="tab-context" onclick="switchRightTab('context')">
+              🧾 Context Assembler Output
+            </button>
+          </div>
+
+          <div class="counters-bar">
+            <span>Total: <strong id="cnt-total" style="color: var(--text-primary);">0</strong></span>
+            <span class="pill pill-active">Active: <span id="cnt-active">0</span></span>
+            <span class="pill pill-superseded">Superseded: <span id="cnt-superseded">0</span></span>
+            <span class="pill pill-retracted">Retracted: <span id="cnt-retracted">0</span></span>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls-row">
+          <div class="segmented-control">
+            <button class="segmented-btn active" id="filter-all-history" onclick="toggleHistoryFilter(false)">All History</button>
+            <button class="segmented-btn" id="filter-active-only" onclick="toggleHistoryFilter(true)">Active Only</button>
+          </div>
+
+          <select id="predicate-filter" class="filter-select" onchange="renderCurrentRightView()">
+            <option value="ALL">All Predicates</option>
+          </select>
+
+          <select id="status-filter" class="filter-select" onchange="renderCurrentRightView()">
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="SUPERSEDED">Superseded</option>
+            <option value="RETRACTED">Retracted</option>
+          </select>
+
+          <input
+            type="text"
+            id="text-filter"
+            class="search-input"
+            placeholder="Search statement or object..."
+            oninput="renderCurrentRightView()"
+          />
+
+          <button class="btn btn-secondary" onclick="fetchFacts()" title="Reload facts from API">
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content Views -->
+      <div class="tab-content-container">
+
+        <!-- TAB 1: Bitemporal Timeline (Swimlanes) -->
+        <div id="view-timeline" class="timeline-wrapper">
+          <div class="timeline-axis" id="timeline-axis-header">
+            <span>2024 Q1</span>
+            <span>2024 Q3</span>
+            <span>2025 Q1</span>
+            <span>2025 Q3</span>
+            <span>2026 Q1</span>
+            <span>2026 Q4 (Now)</span>
+            <span>∞</span>
+          </div>
+          <div class="swimlanes-list" id="swimlanes-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- TAB 2: Structured Fact Ledger -->
+        <div id="view-ledger" class="fact-cards-grid" style="display: none;">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- TAB 3: Context Assembler Output -->
+        <div id="view-context" style="display: none;">
+          <div class="context-viewer-card">
+            <div class="context-meta-row">
+              <span id="context-turn-title">PROMPT CONTEXT INSPECTOR</span>
+              <button class="btn btn-secondary" onclick="copyContextPrompt()">📋 Copy Prompt</button>
+            </div>
+            <pre class="context-code-block" id="context-prompt-text">// Run a grounded copilot query to view assembled prompt context...</pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Slide-Over Fact Provenance & Lineage Drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+  <aside class="slide-over-drawer" id="provenance-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title font-mono" id="drawer-title">FACT PROVENANCE &amp; LINEAGE</div>
+      <button class="btn-icon" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body">
+      <!-- Dynamically filled with FactDetail -->
+    </div>
+  </aside>
+
+  <!-- Patch Modal Dialog -->
+  <div class="modal-backdrop" id="patch-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>✏ Patch Fact Value (User Edit)</span>
+        <button class="btn-icon" onclick="closePatchModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">CURRENT STATEMENT</label>
+          <div id="patch-statement-preview" class="font-mono" style="font-size: 12px; color: var(--text-secondary);"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">NEW OBJECT VALUE</label>
+          <input type="text" id="patch-object-value" class="form-input" placeholder="e.g. San Francisco" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">OPTIONAL VALID FROM (ISO / UTC)</label>
+          <input type="datetime-local" id="patch-valid-from" class="form-input" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePatchModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitPatchFact()">Save &amp; Supersede</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // State Management
+    let activeUserId = '00000000-0000-0000-0000-000000000001';
+    let activeToken = '';
+    let activeConversationId = null;
+    let allFacts = [];
+    let currentRightTab = 'timeline'; // 'timeline' | 'ledger' | 'context'
+    let currentLeftMode = 'copilot'; // 'copilot' | 'ingest'
+    let filterActiveOnly = false;
+    let patchingFactId = null;
+    let latestAssembledContext = '';
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initializeToken();
+      pollReadiness();
+      setInterval(pollReadiness, 10000);
+      await fetchFacts();
+    });
+
+    // 1. Auth & Tenant Management
+    async function initializeToken() {
+      try {
+        const res = await fetch(`/v1/dev/token?user_id=${activeUserId}`);
+        if (!res.ok) throw new Error('Dev token endpoint unavailable');
+        const data = await res.json();
+        activeToken = data.token;
+      } catch (err) {
+        showToast('Dev token initialization failed: ' + err.message, 'error');
+      }
+    }
+
+    async function handleTenantChange(newUserId) {
+      activeUserId = newUserId;
+      activeConversationId = null;
+      document.getElementById('chat-conversation-id').innerText = 'Session: new';
+      const streamLog = document.getElementById('chat-stream-log');
+      streamLog.innerHTML = `
+        <div class="message-card">
+          <div class="message-header"><span>SYSTEM</span><span>TENANT SWITCH</span></div>
+          <div class="assistant-bubble" style="color: var(--text-secondary); font-size: 12px;">
+            Switched to tenant <code>${activeUserId}</code>. Row-Level Security isolation active.
+          </div>
+        </div>
+      `;
+      await initializeToken();
+      showToast(`Switched active tenant to ${activeUserId.slice(0, 8)}...`, 'info');
+      await fetchFacts();
+    }
+
+    // 2. Health & Readiness Telemetry
+    async function pollReadiness() {
+      const dot = document.getElementById('ready-dot');
+      const text = document.getElementById('ready-text');
+      try {
+        const t0 = performance.now();
+        const res = await fetch('/readyz');
+        const t1 = performance.now();
+        const latency = Math.round(t1 - t0);
+        if (res.ok) {
+          dot.className = 'status-dot dot-online';
+          text.innerText = `PG16 + HNSW READY (${latency}ms)`;
+        } else {
+          dot.className = 'status-dot dot-offline';
+          text.innerText = 'ENGINE DEGRADED';
+        }
+      } catch (e) {
+        dot.className = 'status-dot dot-offline';
+        text.innerText = 'ENGINE OFFLINE';
+      }
+    }
+
+    // 3. Action Controls
+    async function seedScenario() {
+      const btn = document.getElementById('btn-seed');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Seeding...';
+      try {
+        const res = await fetch('/v1/dev/seed-scenario', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Seeding failed');
+        }
+        const data = await res.json();
+        showToast(`Seeded ${data.seeded_facts} bitemporal facts & ${data.seeded_sources} sources!`, 'success');
+        await fetchFacts();
+      } catch (err) {
+        showToast('Seed Scenario Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    async function flushJobs() {
+      const btn = document.getElementById('btn-flush');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Flushing...';
+      try {
+        const res = await fetch('/v1/jobs/run-once', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) throw new Error('Job flush failed');
+        const data = await res.json();
+        showToast(`Processed ${data.processed} queued extraction jobs`, 'success');
+        await fetchFacts();
+      } catch (err) {
+        showToast('Flush Jobs Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    async function exportProfile() {
+      try {
+        const res = await fetch('/v1/profile/export', {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) throw new Error('Export failed');
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `second_brain_export_${activeUserId.slice(0, 8)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Exported GDPR profile JSON', 'success');
+      } catch (err) {
+        showToast('Export Error: ' + err.message, 'error');
+      }
+    }
+
+    async function purgeTenant() {
+      if (!confirm(`Are you sure you want to permanently purge all memories and profile records for Tenant ${activeUserId.slice(0, 8)}? This satisfies GDPR Right to be Forgotten.`)) {
+        return;
+      }
+      try {
+        const res = await fetch('/v1/profile', {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) throw new Error('Purge failed');
+        const data = await res.json();
+        showToast(`Purged tenant (${data.purged_rows} records removed)`, 'success');
+        await fetchFacts();
+      } catch (err) {
+        showToast('Purge Error: ' + err.message, 'error');
+      }
+    }
+
+    // 4. Facts Fetching & Categorization
+    async function fetchFacts() {
+      try {
+        const res = await fetch('/v1/facts?current_only=false&page_size=100', {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch facts');
+        const data = await res.json();
+        allFacts = data.items || [];
+        updateSummaryCounters();
+        populatePredicateDropdown();
+        renderCurrentRightView();
+      } catch (err) {
+        console.error('fetchFacts error:', err);
+      }
+    }
+
+    function getNormalizedFactStatus(fact) {
+      const rawStat = (fact.status || '').toUpperCase();
+      const rawState = (fact.state || '').toLowerCase();
+      if (rawStat === 'RETRACTED' || rawState === 'deleted') return 'RETRACTED';
+      if (rawStat === 'SUPERSEDED' || rawState === 'superseded') return 'SUPERSEDED';
+      if (fact.valid_to) {
+        const toTs = new Date(fact.valid_to).getTime();
+        if (toTs <= Date.now()) return 'SUPERSEDED';
+      }
+      return 'ACTIVE';
+    }
+
+    function updateSummaryCounters() {
+      let active = 0, superseded = 0, retracted = 0;
+      for (const f of allFacts) {
+        const st = getNormalizedFactStatus(f);
+        if (st === 'ACTIVE') active++;
+        else if (st === 'SUPERSEDED') superseded++;
+        else if (st === 'RETRACTED') retracted++;
+      }
+      document.getElementById('cnt-total').innerText = allFacts.length;
+      document.getElementById('cnt-active').innerText = active;
+      document.getElementById('cnt-superseded').innerText = superseded;
+      document.getElementById('cnt-retracted').innerText = retracted;
+    }
+
+    function populatePredicateDropdown() {
+      const select = document.getElementById('predicate-filter');
+      const currentVal = select.value;
+      const predicates = new Set();
+      for (const f of allFacts) {
+        if (f.predicate) predicates.add(f.predicate);
+      }
+      select.innerHTML = '<option value="ALL">All Predicates</option>';
+      for (const p of Array.from(predicates).sort()) {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.innerText = p;
+        select.appendChild(opt);
+      }
+      if (predicates.has(currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    function getFilteredFacts() {
+      const predFilter = document.getElementById('predicate-filter').value;
+      const statusFilter = document.getElementById('status-filter').value;
+      const textFilter = document.getElementById('text-filter').value.trim().toLowerCase();
+
+      return allFacts.filter(f => {
+        const st = getNormalizedFactStatus(f);
+        if (filterActiveOnly && st !== 'ACTIVE') return false;
+        if (predFilter !== 'ALL' && f.predicate !== predFilter) return false;
+        if (statusFilter !== 'ALL' && st !== statusFilter) return false;
+        if (textFilter) {
+          const matchText = (f.text || '').toLowerCase();
+          const matchPred = (f.predicate || '').toLowerCase();
+          const matchObj = ((f.object && f.object.value) || '').toLowerCase();
+          if (!matchText.includes(textFilter) && !matchPred.includes(textFilter) && !matchObj.includes(textFilter)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    // 5. Right Pane Views
+    function switchRightTab(tab) {
+      currentRightTab = tab;
+      document.getElementById('tab-timeline').className = 'view-tab-btn' + (tab === 'timeline' ? ' active' : '');
+      document.getElementById('tab-ledger').className = 'view-tab-btn' + (tab === 'ledger' ? ' active' : '');
+      document.getElementById('tab-context').className = 'view-tab-btn' + (tab === 'context' ? ' active' : '');
+
+      document.getElementById('view-timeline').style.display = tab === 'timeline' ? 'flex' : 'none';
+      document.getElementById('view-ledger').style.display = tab === 'ledger' ? 'flex' : 'none';
+      document.getElementById('view-context').style.display = tab === 'context' ? 'block' : 'none';
+
+      renderCurrentRightView();
+    }
+
+    function toggleHistoryFilter(activeOnly) {
+      filterActiveOnly = activeOnly;
+      document.getElementById('filter-all-history').className = 'segmented-btn' + (!activeOnly ? ' active' : '');
+      document.getElementById('filter-active-only').className = 'segmented-btn' + (activeOnly ? ' active' : '');
+      renderCurrentRightView();
+    }
+
+    function renderCurrentRightView() {
+      if (currentRightTab === 'timeline') {
+        renderTimeline();
+      } else if (currentRightTab === 'ledger') {
+        renderLedger();
+      }
+    }
+
+    // Render Tab 1: Timeline (Gantt Swimlanes)
+    function renderTimeline() {
+      const container = document.getElementById('swimlanes-container');
+      const facts = getFilteredFacts();
+
+      if (facts.length === 0) {
+        container.innerHTML = `<div style="padding: 32px; text-align: center; color: var(--text-muted); font-family: var(--font-mono);">No facts found matching current filters. Click "▶ Seed Scenario" to populate.</div>`;
+        return;
+      }
+
+      // Group facts by predicate
+      const groups = {};
+      for (const f of facts) {
+        const p = f.predicate || 'other';
+        if (!groups[p]) groups[p] = [];
+        groups[p].push(f);
+      }
+
+      // Proportional bounds: from 2024-01-01 to 2026-12-31
+      const timelineStart = new Date('2024-01-01T00:00:00Z').getTime();
+      const timelineEnd = new Date('2026-12-31T23:59:59Z').getTime();
+      const totalSpan = timelineEnd - timelineStart;
+
+      let html = '';
+      for (const [pred, groupFacts] of Object.entries(groups)) {
+        html += `
+          <div class="swimlane-row">
+            <div class="swimlane-label" title="${escapeHtml(pred)}">${escapeHtml(pred)}</div>
+            <div class="swimlane-track">
+        `;
+
+        for (const f of groupFacts) {
+          const st = getNormalizedFactStatus(f);
+          const fStart = new Date(f.valid_from).getTime();
+          const fEnd = f.valid_to ? new Date(f.valid_to).getTime() : timelineEnd;
+
+          const leftPct = Math.max(0, Math.min(95, ((fStart - timelineStart) / totalSpan) * 100));
+          let widthPct = Math.max(6, ((fEnd - fStart) / totalSpan) * 100);
+          if (leftPct + widthPct > 100) widthPct = 100 - leftPct;
+
+          const barClass = st === 'ACTIVE' ? 'bar-active' : (st === 'RETRACTED' ? 'bar-retracted' : 'bar-superseded');
+          const objVal = (f.object && f.object.value) || f.text;
+          const fromStr = f.valid_from.slice(0, 10);
+          const toStr = f.valid_to ? f.valid_to.slice(0, 10) : '∞';
+
+          html += `
+            <div
+              class="interval-bar ${barClass}"
+              style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}%;"
+              onclick="openProvenanceDrawer('${f.id}')"
+              title="${escapeHtml(f.text)} [${fromStr} .. ${toStr}] (${st})"
+            >
+              ${escapeHtml(objVal)} [${fromStr} .. ${toStr}]
+            </div>
+          `;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Render Tab 2: Fact Ledger Cards
+    function renderLedger() {
+      const container = document.getElementById('view-ledger');
+      const facts = getFilteredFacts();
+
+      if (facts.length === 0) {
+        container.innerHTML = `<div style="padding: 32px; text-align: center; color: var(--text-muted); font-family: var(--font-mono);">No facts found matching current filters.</div>`;
+        return;
+      }
+
+      let html = '';
+      for (const f of facts) {
+        const st = getNormalizedFactStatus(f);
+        const pillClass = st === 'ACTIVE' ? 'pill-active' : (st === 'RETRACTED' ? 'pill-retracted' : 'pill-superseded');
+        const fromStr = f.valid_from.slice(0, 16).replace('T', ' ') + ' UTC';
+        const toStr = f.valid_to ? (f.valid_to.slice(0, 16).replace('T', ' ') + ' UTC') : '∞ (Current)';
+        const recStr = f.recorded_at ? f.recorded_at.slice(0, 16).replace('T', ' ') + ' UTC' : 'System Boot';
+        const txRightStr = st === 'ACTIVE' ? 'Active' : (st === 'RETRACTED' ? 'Retracted' : 'Superseded');
+
+        html += `
+          <div class="fact-card" id="fact-card-${f.id}">
+            <div class="fact-card-header">
+              <div class="fact-statement">${escapeHtml(f.text)}</div>
+              <div class="fact-header-badges">
+                <span class="badge-mono badge-predicate">${escapeHtml(f.predicate)}</span>
+                <span class="badge-mono badge-origin">${escapeHtml(f.origin || 'EXTRACTED')}</span>
+                <span class="badge-mono">${Math.round((f.confidence || 1.0) * 100)}%</span>
+                <span class="pill ${pillClass}">${st}</span>
+              </div>
+            </div>
+
+            <!-- Dual Bitemporal Monospace Matrix -->
+            <div class="bitemporal-matrix">
+              <div class="matrix-row">
+                <span class="matrix-label">VALID (World) :</span>
+                <span class="matrix-val">${fromStr}  ───►  ${toStr}</span>
+              </div>
+              <div class="matrix-row">
+                <span class="matrix-label">TX    (System):</span>
+                <span class="matrix-val">${recStr}  ───►  ${txRightStr}</span>
+              </div>
+            </div>
+
+            <div class="fact-card-actions">
+              <button class="btn btn-secondary font-mono" onclick="openProvenanceDrawer('${f.id}')" style="font-size: 11px;">
+                🔍 Provenance &amp; Chain
+              </button>
+              <button class="btn btn-secondary font-mono" onclick="openPatchModal('${f.id}')" style="font-size: 11px;">
+                ✏ Patch Value
+              </button>
+              <button class="btn btn-danger font-mono" onclick="retractFact('${f.id}')" style="font-size: 11px;">
+                ⊘ Retract
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // 6. Slide-Over Fact Provenance & Lineage Drawer
+    async function openProvenanceDrawer(factId) {
+      const drawer = document.getElementById('provenance-drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      const body = document.getElementById('drawer-body');
+      const title = document.getElementById('drawer-title');
+
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      title.innerText = `FACT // ${factId.slice(0, 8)}...`;
+      body.innerHTML = `<div style="text-align: center; padding: 32px;"><span class="spinner"></span> Loading provenance...</div>`;
+
+      try {
+        const res = await fetch(`/v1/facts/${factId}`, {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        if (!res.ok) throw new Error('Failed to load fact details');
+        const d = await res.json();
+
+        const st = getNormalizedFactStatus(d);
+        const pillClass = st === 'ACTIVE' ? 'pill-active' : (st === 'RETRACTED' ? 'pill-retracted' : 'pill-superseded');
+
+        let evidenceHtml = '';
+        if (d.evidence && d.evidence.length > 0) {
+          for (const ev of d.evidence) {
+            evidenceHtml += `
+              <div class="evidence-item">
+                <div class="evidence-meta">
+                  <span>Source: ${ev.source_id.slice(0, 8)}...</span>
+                  <span>Role: ${ev.role} • ${ev.source_ts.slice(0, 10)}</span>
+                </div>
+                <div class="evidence-quote font-mono">"${escapeHtml(ev.snippet)}"</div>
+              </div>
+            `;
+          }
+        } else {
+          evidenceHtml = `<div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11px;">No direct evidence quotes recorded.</div>`;
+        }
+
+        let lineageHtml = '';
+        if (d.chain && d.chain.length > 0) {
+          for (const link of d.chain) {
+            const linkSt = getNormalizedFactStatus(link);
+            const linkPill = linkSt === 'ACTIVE' ? 'pill-active' : 'pill-superseded';
+            lineageHtml += `
+              <div class="lineage-node-card" onclick="openProvenanceDrawer('${link.id}')">
+                <div>
+                  <div style="font-weight: 500; font-size: 12px;">${escapeHtml(link.text)}</div>
+                  <div class="font-mono" style="font-size: 10px; color: var(--text-muted);">
+                    [${link.valid_from.slice(0, 10)} .. ${link.valid_to ? link.valid_to.slice(0, 10) : '∞'}]
+                  </div>
+                </div>
+                <span class="pill ${linkPill}">${linkSt}</span>
+              </div>
+            `;
+          }
+        } else {
+          lineageHtml = `<div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11px;">Standalone fact (no predecessor or successor chain).</div>`;
+        }
+
+        body.innerHTML = `
+          <div>
+            <div class="drawer-section-title">STATEMENT &amp; STATUS</div>
+            <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">${escapeHtml(d.text)}</div>
+            <span class="pill ${pillClass}">${st}</span>
+          </div>
+
+          <div>
+            <div class="drawer-section-title">METADATA MATRIX</div>
+            <div class="meta-property-grid">
+              <span class="meta-key">Fact ID:</span>
+              <span class="meta-val">${d.id}</span>
+              <span class="meta-key">Subject:</span>
+              <span class="meta-val">${(d.subject && d.subject.name) || 'User'} (${(d.subject && d.subject.id) || ''})</span>
+              <span class="meta-key">Predicate:</span>
+              <span class="meta-val">${d.predicate}</span>
+              <span class="meta-key">Object:</span>
+              <span class="meta-val">${(d.object && d.object.value) || '—'}</span>
+              <span class="meta-key">Time Precision:</span>
+              <span class="meta-val">${d.time_precision}</span>
+              <span class="meta-key">Origin:</span>
+              <span class="meta-val">${d.origin}</span>
+              <span class="meta-key">Confidence:</span>
+              <span class="meta-val">${Math.round((d.confidence || 1.0) * 100)}%</span>
+              <span class="meta-key">Access Count:</span>
+              <span class="meta-val">${d.access_count || 0}</span>
+              <span class="meta-key">Recorded At:</span>
+              <span class="meta-val">${d.recorded_at}</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="drawer-section-title">EVIDENCE QUOTES (Q-14)</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${evidenceHtml}
+            </div>
+          </div>
+
+          <div>
+            <div class="drawer-section-title">SUPERSESSION LINEAGE CHAIN (Q-15)</div>
+            <div class="lineage-nodes-list">
+              ${lineageHtml}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        body.innerHTML = `<div style="color: #FB7185; padding: 16px;">Error loading fact details: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeDrawer() {
+      document.getElementById('provenance-drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+    }
+
+    // 7. Fact Mutation: Patch & Retract
+    function openPatchModal(factId) {
+      patchingFactId = factId;
+      const f = allFacts.find(x => x.id === factId);
+      if (!f) return;
+      document.getElementById('patch-statement-preview').innerText = f.text;
+      document.getElementById('patch-object-value').value = (f.object && f.object.value) || '';
+      document.getElementById('patch-valid-from').value = f.valid_from ? f.valid_from.slice(0, 16) : '';
+      document.getElementById('patch-modal').classList.add('open');
+    }
+
+    function closePatchModal() {
+      document.getElementById('patch-modal').classList.remove('open');
+      patchingFactId = null;
+    }
+
+    async function submitPatchFact() {
+      if (!patchingFactId) return;
+      const newObj = document.getElementById('patch-object-value').value.trim();
+      const validFromVal = document.getElementById('patch-valid-from').value;
+      if (!newObj) {
+        showToast('Object value cannot be empty', 'error');
+        return;
+      }
+
+      const body = { object_value: newObj };
+      if (validFromVal) {
+        body.valid_from = new Date(validFromVal).toISOString();
+      }
+
+      try {
+        const res = await fetch(`/v1/facts/${patchingFactId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Patch failed');
+        }
+        closePatchModal();
+        showToast('Fact patched and superseded successfully!', 'success');
+        await fetchFacts();
+      } catch (err) {
+        showToast('Patch Fact Error: ' + err.message, 'error');
+      }
+    }
+
+    async function retractFact(factId) {
+      const reason = prompt('Enter retraction reason:', 'user_retracted');
+      if (reason === null) return;
+      try {
+        const res = await fetch(`/v1/facts/${factId}/retract`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify({ reason: reason || 'user_retracted' })
+        });
+        if (!res.ok) throw new Error('Retract failed');
+        showToast('Fact retracted successfully', 'success');
+        await fetchFacts();
+      } catch (err) {
+        showToast('Retract Fact Error: ' + err.message, 'error');
+      }
+    }
+
+    // 8. Grounded Chat Copilot (SSE Streaming)
+    function switchLeftMode(mode) {
+      currentLeftMode = mode;
+      document.getElementById('tab-copilot').className = 'segmented-btn' + (mode === 'copilot' ? ' active' : '');
+      document.getElementById('tab-ingest').className = 'segmented-btn' + (mode === 'ingest' ? ' active' : '');
+      document.getElementById('copilot-container').style.display = mode === 'copilot' ? 'flex' : 'none';
+      document.getElementById('ingest-container').style.display = mode === 'ingest' ? 'flex' : 'none';
+      document.getElementById('quick-chips-bar').style.display = mode === 'copilot' ? 'flex' : 'none';
+    }
+
+    function clearTemporalAnchor() {
+      document.getElementById('temporal-anchor').value = '';
+    }
+
+    function getTemporalAnchorIso() {
+      const v = document.getElementById('temporal-anchor').value;
+      return v ? new Date(v).toISOString() : null;
+    }
+
+    function applyQuickPrompt(promptText) {
+      const input = document.getElementById('chat-input');
+      input.value = promptText;
+      submitChatQuery();
+    }
+
+    function handleChatKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitChatQuery();
+      }
+    }
+
+    async function submitChatQuery() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      input.value = '';
+      const sendBtn = document.getElementById('btn-send-chat');
+      sendBtn.disabled = true;
+
+      const streamLog = document.getElementById('chat-stream-log');
+      const userTs = new Date().toISOString().slice(11, 19) + ' UTC';
+
+      // Append User message
+      const userCard = document.createElement('div');
+      userCard.className = 'message-card';
+      userCard.innerHTML = `
+        <div class="message-header" style="justify-content: flex-end;">
+          <span>USER • ${userTs}</span>
+        </div>
+        <div class="user-bubble">${escapeHtml(message)}</div>
+      `;
+      streamLog.appendChild(userCard);
+
+      // Append Assistant message container with streaming cursor
+      const asstCard = document.createElement('div');
+      asstCard.className = 'message-card';
+      const msgId = 'msg-' + Date.now();
+      asstCard.innerHTML = `
+        <div class="message-header">
+          <span>ASSISTANT (Grounded SSE)</span>
+          <span id="${msgId}-status">STREAMING</span>
+        </div>
+        <div class="assistant-bubble">
+          <div class="assistant-text" id="${msgId}-text"><span class="streaming-cursor"></span></div>
+          <div id="${msgId}-xray" style="display: none;"></div>
+        </div>
+      `;
+      streamLog.appendChild(asstCard);
+      streamLog.scrollTop = streamLog.scrollHeight;
+
+      let accumulatedText = '';
+      let telemetry = null;
+      let traces = [];
+
+      try {
+        const payload = {
+          message: message,
+          conversation_id: activeConversationId,
+          client_ts: getTemporalAnchorIso()
+        };
+
+        const res = await fetch('/v1/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          // Fallback to non-streaming /v1/chat
+          const nonStreamRes = await fetch('/v1/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${activeToken}`
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!nonStreamRes.ok) {
+            const err = await nonStreamRes.json().catch(() => ({}));
+            throw new Error(err.message || 'Chat request failed');
+          }
+          const chatData = await nonStreamRes.json();
+          accumulatedText = chatData.content;
+          telemetry = chatData.telemetry || chatData.trace;
+          if (chatData.conversation_id) {
+            activeConversationId = chatData.conversation_id;
+            document.getElementById('chat-conversation-id').innerText = `Session: ${activeConversationId.slice(0, 8)}...`;
+          }
+        } else {
+          // Process SSE Stream
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const frames = buffer.split('\n\n');
+            buffer = frames.pop() || '';
+
+            for (const frame of frames) {
+              if (!frame.trim()) continue;
+              const lines = frame.split('\n');
+              let eventType = 'message';
+              let dataStr = '';
+
+              for (const line of lines) {
+                if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+                else if (line.startsWith('data: ')) dataStr = line.slice(6);
+              }
+
+              let dataObj = null;
+              try { dataObj = JSON.parse(dataStr); } catch (_) { dataObj = dataStr; }
+
+              if (eventType === 'token') {
+                const delta = typeof dataObj === 'string' ? dataObj : (dataObj.delta || '');
+                accumulatedText += delta;
+                renderAssistantStreaming(msgId, accumulatedText);
+              } else if (eventType === 'trace') {
+                traces = dataObj;
+              } else if (eventType === 'done') {
+                if (dataObj.conversation_id) {
+                  activeConversationId = dataObj.conversation_id;
+                  document.getElementById('chat-conversation-id').innerText = `Session: ${activeConversationId.slice(0, 8)}...`;
+                }
+                if (dataObj.telemetry) {
+                  telemetry = dataObj.telemetry;
+                }
+              }
+            }
+          }
+        }
+
+        // Finalize rendering
+        document.getElementById(`${msgId}-status`).innerText = 'COMPLETED';
+        renderAssistantFinal(msgId, accumulatedText, telemetry, traces);
+        if (telemetry && telemetry.context_text) {
+          latestAssembledContext = telemetry.context_text;
+          updateContextViewer(telemetry.context_text, telemetry);
+        }
+      } catch (err) {
+        document.getElementById(`${msgId}-status`).innerText = 'ERROR';
+        document.getElementById(`${msgId}-text`).innerHTML = `<span style="color: #FB7185;">Error: ${escapeHtml(err.message)}</span>`;
+      } finally {
+        sendBtn.disabled = false;
+        streamLog.scrollTop = streamLog.scrollHeight;
+      }
+    }
+
+    function renderAssistantStreaming(msgId, text) {
+      const container = document.getElementById(`${msgId}-text`);
+      container.innerHTML = escapeHtml(text) + '<span class="streaming-cursor"></span>';
+    }
+
+    function renderAssistantFinal(msgId, text, telemetry, traces) {
+      const textContainer = document.getElementById(`${msgId}-text`);
+      const xrayContainer = document.getElementById(`${msgId}-xray`);
+
+      // Parse citations: [F1], [F2], [S1]
+      const formatted = escapeHtml(text).replace(/\[([FSfs])(\d+)\]/g, (match, prefix, num) => {
+        const ref = (prefix + num).toUpperCase();
+        return `<button class="citation-pill" onclick="handleCitationClick('${ref}')">[${ref}]</button>`;
+      });
+
+      textContainer.innerHTML = formatted;
+
+      // Render X-Ray Telemetry Card if available
+      if (telemetry) {
+        xrayContainer.style.display = 'block';
+        const lanes = telemetry.lane_counts || {};
+        const intent = telemetry.intent || 'CURRENT_STATE';
+        const filterMode = telemetry.filter_mode || 'CURRENT';
+        const latency = telemetry.latency_ms ? telemetry.latency_ms.toFixed(1) + 'ms' : '—';
+        const tokens = telemetry.token_count || 0;
+        const abstained = telemetry.abstained;
+
+        xrayContainer.innerHTML = `
+          <div class="xray-container">
+            <div class="xray-header" onclick="toggleXray('${msgId}-xray-body')">
+              <div class="xray-badges">
+                <span>⚡ X-RAY TELEMETRY</span>
+                <span class="badge-mono badge-predicate">${intent}</span>
+                <span class="badge-mono">${filterMode}</span>
+                <span class="badge-mono">${latency}</span>
+                ${abstained ? '<span class="pill pill-retracted">ABSTAINED</span>' : ''}
+              </div>
+              <span id="${msgId}-xray-body-chevron">▼</span>
+            </div>
+            <div class="xray-body" id="${msgId}-xray-body">
+              <div class="lanes-grid">
+                <div class="lane-box">
+                  <div class="lane-name">Vector Facts</div>
+                  <div class="lane-val">${lanes.vector_facts || 0}</div>
+                </div>
+                <div class="lane-box">
+                  <div class="lane-name">FTS Facts</div>
+                  <div class="lane-val">${lanes.fts_facts || 0}</div>
+                </div>
+                <div class="lane-box">
+                  <div class="lane-name">Graph Expand</div>
+                  <div class="lane-val">${lanes.graph_expand || 0}</div>
+                </div>
+                <div class="lane-box">
+                  <div class="lane-name">Temporal Facts</div>
+                  <div class="lane-val">${lanes.temporal_facts || 0}</div>
+                </div>
+                <div class="lane-box">
+                  <div class="lane-name">Vector Sources</div>
+                  <div class="lane-val">${lanes.vector_sources || 0}</div>
+                </div>
+              </div>
+              <div class="xray-footer-row">
+                <span style="color: var(--text-muted);">Budget: <strong>${tokens}</strong> tokens ${telemetry.as_of ? `• as_of: ${telemetry.as_of.slice(0, 16)}` : ''}</span>
+                <button class="btn btn-secondary font-mono" onclick="switchRightTab('context')" style="font-size: 11px;">
+                  🧾 View Assembled Prompt Context
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleXray(bodyId) {
+      const b = document.getElementById(bodyId);
+      const ch = document.getElementById(`${bodyId}-chevron`);
+      if (b.style.display === 'none') {
+        b.style.display = 'flex';
+        if (ch) ch.innerText = '▼';
+      } else {
+        b.style.display = 'none';
+        if (ch) ch.innerText = '▶';
+      }
+    }
+
+    function handleCitationClick(ref) {
+      switchRightTab('ledger');
+      // Find matching fact or highlight first active fact
+      const index = parseInt(ref.slice(1)) - 1;
+      const targetFact = allFacts[index] || allFacts[0];
+      if (targetFact) {
+        const card = document.getElementById(`fact-card-${targetFact.id}`);
+        if (card) {
+          card.classList.remove('highlight-pulse');
+          void card.offsetWidth; // trigger reflow
+          card.classList.add('highlight-pulse');
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        openProvenanceDrawer(targetFact.id);
+      }
+    }
+
+    // 9. Context Viewer (Tab 3)
+    function updateContextViewer(text, telem) {
+      const codeBlock = document.getElementById('context-prompt-text');
+      const title = document.getElementById('context-turn-title');
+      codeBlock.innerText = text || '// No memory prompt context assembled for this turn.';
+      if (telem) {
+        title.innerText = `PROMPT CONTEXT (Intent: ${telem.intent} • Tokens: ${telem.token_count || 0})`;
+      }
+    }
+
+    function copyContextPrompt() {
+      const code = document.getElementById('context-prompt-text').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Copied assembled prompt context to clipboard', 'success');
+      });
+    }
+
+    // 10. Note Ingestion Form
+    async function submitNoteIngest() {
+      const title = document.getElementById('note-title').value.trim();
+      const content = document.getElementById('note-content').value.trim();
+      if (!content) {
+        showToast('Note content cannot be empty', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-note');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Ingesting...';
+
+      try {
+        const body = {
+          content: content,
+          title: title || null,
+          source_ts: getTemporalAnchorIso()
+        };
+
+        const res = await fetch('/v1/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Note ingestion failed');
+        }
+
+        const data = await res.json();
+        showToast(`Note accepted! Created ${data.source_count} source chunks`, 'success');
+
+        const resultCard = document.getElementById('ingest-result');
+        resultCard.style.display = 'flex';
+        resultCard.innerHTML = `
+          <div style="color: #34D399; font-weight: 600;">✓ INGESTION ACCEPTED (HTTP 202)</div>
+          <div>Sources Created: <strong>${data.source_count}</strong></div>
+          <div>Extraction Job ID: <code>${data.job_id || 'none'}</code></div>
+          <button class="btn btn-primary" onclick="flushJobs()" style="margin-top: 8px;">
+            ⚡ Flush Outbox Queue (Process Job Now)
+          </button>
+        `;
+
+        document.getElementById('note-content').value = '';
+        document.getElementById('note-title').value = '';
+      } catch (err) {
+        showToast('Ingest Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📝 Ingest Note (POST /v1/notes)';
+      }
+    }
+
+    // 11. Toast System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      const icon = type === 'success' ? '✓' : (type === 'error' ? '✕' : 'ℹ');
+      toast.innerHTML = `<span style="font-weight: 700;">${icon}</span> <span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>
+

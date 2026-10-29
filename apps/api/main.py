@@ -14,6 +14,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from .deps import AppContainer
 from .errors import build_error_response, register_exception_handlers
 from .routes import api_router
+from .ui import ui_router
 
 
 class RequestIdMiddleware:
@@ -235,6 +236,9 @@ def create_app(
 
     # Register error handlers
     register_exception_handlers(app)
+
+    # Mount Workbench UI routes
+    app.include_router(ui_router)
 
     # Mount API routes
     app.include_router(api_router)

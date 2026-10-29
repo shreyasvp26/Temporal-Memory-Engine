@@ -43,4 +43,4 @@ Complete tasks strictly in order. One task = One Git commit. Never start a task 
 
 ## Milestone M7: Engineering Workbench UI & Telemetry
 - [x] **M7-01**: Implement backend workbench telemetry, dev auth token minting (`GET /v1/dev/token`), on-demand worker job execution (`POST /v1/jobs/run-once`), and deterministic 3-stage bitemporal scenario seeding (`POST /v1/dev/seed-scenario`) with enriched retrieval traces across `/v1/chat` JSON and SSE streams.
-- [ ] **M7-02**: Implement Engineering Workbench frontend UI with interactive bitemporal timeline, 5-lane retrieval inspector, live chat SSE streaming, memory fact manager, and tenant persona switcher.
+- [x] **M7-02**: Implement Engineering Workbench frontend UI with interactive bitemporal timeline, 5-lane retrieval inspector, live chat SSE streaming, memory fact manager, and tenant persona switcher.
