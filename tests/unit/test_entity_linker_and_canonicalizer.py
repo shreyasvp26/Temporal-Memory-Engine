@@ -514,11 +514,61 @@ class TestCanonicalizer:
         assert canonicalizer.resolve_predicate('job').name == 'job_title'
         assert canonicalizer.resolve_predicate('role').name == 'job_title'
 
-    def test_fallback_to_related_to(self, canonicalizer: Canonicalizer) -> None:
-        resolved = canonicalizer.resolve_predicate('some_random_unknown_pred')
-        assert resolved.name == 'related_to'
-        assert resolved.template == '{subject} is related to {object}'
+    def test_fallback_to_other(self, canonicalizer: Canonicalizer) -> None:
+        resolved = canonicalizer.resolve_predicate('some_random_unknown_pred_xyz_123')
+        assert resolved.name == 'other'
+        assert resolved.template == '{subject}: {object}'
         assert resolved.cardinality == Cardinality.MULTI
+
+    def test_expanded_surface_forms(self, canonicalizer: Canonicalizer) -> None:
+        assert canonicalizer.resolve_predicate('graduated_from').name == 'attended'
+        assert canonicalizer.resolve_predicate('went_to').name == 'attended'
+        assert canonicalizer.resolve_predicate('diet').name == 'prefers'
+        assert canonicalizer.resolve_predicate('eats').name == 'prefers'
+        assert canonicalizer.resolve_predicate('food_preference').name == 'prefers'
+        assert canonicalizer.resolve_predicate('dietary_preference').name == 'prefers'
+        assert canonicalizer.resolve_predicate('looking_for').name == 'plans_to'
+        assert canonicalizer.resolve_predicate('planning_to').name == 'plans_to'
+        assert canonicalizer.resolve_predicate('wants_to').name == 'plans_to'
+        assert canonicalizer.resolve_predicate('uses').name == 'has_skill'
+        assert canonicalizer.resolve_predicate('uses_tool').name == 'has_skill'
+        assert canonicalizer.resolve_predicate('uses_tech').name == 'has_skill'
+        assert canonicalizer.resolve_predicate('married').name == 'relationship_status'
+        assert canonicalizer.resolve_predicate('dating').name == 'relationship_status'
+        assert canonicalizer.resolve_predicate('partner_of').name == 'relationship_status'
+        assert canonicalizer.resolve_predicate('works_with').name == 'friend_of'
+        assert canonicalizer.resolve_predicate('colleague_of').name == 'friend_of'
+        assert canonicalizer.resolve_predicate('has_occupation').name == 'job_title'
+        assert canonicalizer.resolve_predicate('has_role').name == 'job_title'
+        assert canonicalizer.resolve_predicate('works_as').name == 'job_title'
+        assert canonicalizer.resolve_predicate('launched').name == 'completed'
+        assert canonicalizer.resolve_predicate('finished').name == 'completed'
+        assert canonicalizer.resolve_predicate('submitted a paper to').name == 'completed'
+        assert canonicalizer.resolve_predicate('completed_project').name == 'completed'
+        assert canonicalizer.resolve_predicate('started').name == 'started'
+        assert canonicalizer.resolve_predicate('building').name == 'is_working_on'
+        assert canonicalizer.resolve_predicate('working_on').name == 'is_working_on'
+        assert canonicalizer.resolve_predicate('worked_on').name == 'is_working_on'
+        assert canonicalizer.resolve_predicate('has_pet').name == 'owns'
+        assert canonicalizer.resolve_predicate('pet_name').name == 'owns'
+        assert canonicalizer.resolve_predicate('bought').name == 'bought'
+        assert canonicalizer.resolve_predicate('owns').name == 'owns'
+
+    def test_safety_net_always_returns_seeded_predicate(self, canonicalizer: Canonicalizer) -> None:
+        from memory_engine.ingest.canonicalizer import SEEDED_PREDICATE_NAMES
+
+        for test_pred in (
+            'random_unseeded_string',
+            'submitted a paper to',
+            'completely_unheard_of',
+            'dietary_preference',
+            'uses_tech',
+            'partner_of',
+            'has_role',
+            'worked_on',
+        ):
+            resolved = canonicalizer.canonicalize(test_pred)
+            assert resolved.name in SEEDED_PREDICATE_NAMES
 
     def test_object_kind_rules_literal(self, canonicalizer: Canonicalizer) -> None:
         # job_title has ObjectKind.LITERAL
@@ -612,7 +662,7 @@ class TestCanonicalizer:
             subject='I',
             object='Quantum Computing',
         )
-        assert text3 == 'I is related to Quantum Computing'
+        assert text3 == 'I: Quantum Computing'
 
     def test_template_rendering_non_self_entity(self, canonicalizer: Canonicalizer) -> None:
         other_entity = Entity(

@@ -183,7 +183,7 @@ class IngestService:
 
         self.uows = uows
         self.extractor = extractor
-        self.canonicalizer = canonicalizer
+        self.canonicalizer = canonicalizer or Canonicalizer()
         self.time_resolver = time_resolver or TimeResolver()
         self.embedder = embedder
         self.entity_linker = entity_linker or EntityLinker(embedder=embedder)

@@ -133,6 +133,13 @@ def build_parser() -> argparse.ArgumentParser:
         help='Directory for embedding SQLite cache (default: eval/.cache)',
     )
     parser.add_argument(
+        '--question-id',
+        type=str,
+        default=None,
+        dest='question_id',
+        help='Evaluate only the question matching this question_id (e.g. ssu_006 or ku_001)',
+    )
+    parser.add_argument(
         '--prepare-sample',
         action='store_true',
         default=False,
@@ -173,8 +180,69 @@ def _resolve_env_value(key: str, default: str = '') -> str:
     return os.environ.get(key, default)
 
 
+def _sanitize_facts_data(data: Any) -> Any:
+    """Sanitize extraction facts data to handle LLM quirks like speaker vs subject."""
+    if isinstance(data, list):
+        data = {'facts': data}
+    if not isinstance(data, dict) or 'facts' not in data or not isinstance(data['facts'], list):
+        return data
+
+    from memory_engine.domain.models import ExtractedFact
+
+    allowed_fields = set(ExtractedFact.model_fields.keys())
+    cleaned_facts: list[dict[str, Any]] = []
+
+    for item in data['facts']:
+        if not isinstance(item, dict):
+            continue
+
+        item_dict = dict(item)
+
+        # If subject is missing or empty and speaker is present, rename speaker to subject
+        subj = item_dict.get('subject')
+        if (subj is None or not str(subj).strip()) and 'speaker' in item_dict:
+            item_dict['subject'] = str(item_dict.pop('speaker')).strip()
+        else:
+            item_dict.pop('speaker', None)
+
+        # Pop any unknown keys not in ExtractedFact
+        for k in list(item_dict.keys()):
+            if k not in allowed_fields:
+                item_dict.pop(k, None)
+
+        # Filter out if subject, predicate, object, or evidence_span is None or empty after
+        # stripping
+        is_valid = True
+        for field in ('subject', 'predicate', 'object', 'evidence_span'):
+            val = item_dict.get(field)
+            if val is None or not str(val).strip():
+                is_valid = False
+                break
+        if not is_valid:
+            continue
+
+        # Standard string clean and defaults
+        item_dict['subject'] = str(item_dict['subject']).strip()
+        item_dict['predicate'] = str(item_dict['predicate']).strip()
+        item_dict['object'] = str(item_dict['object']).strip()
+        item_dict['evidence_span'] = str(item_dict['evidence_span']).strip()
+
+        item_dict.setdefault('confidence', 1.0)
+        item_dict.setdefault('subject_type', 'person')
+        item_dict.setdefault('object_type', 'literal')
+        item_dict.setdefault('is_retraction', False)
+        item_dict.setdefault('valid_from_text', None)
+        item_dict.setdefault('valid_to_text', None)
+        item_dict.setdefault('source_turn', 0)
+
+        cleaned_facts.append(item_dict)
+
+    data['facts'] = cleaned_facts
+    return data
+
+
 class _PacedGateway:
-    """LLMGateway shim with per-call pacing, retry/backoff on 503/429, and JSON completion."""
+    """LLMGateway shim with pacing, retry/backoff on 503/429/timeout, and JSON completion."""
 
     _MAX_ATTEMPTS: int = 4
 
@@ -189,8 +257,12 @@ class _PacedGateway:
         self._fallback_client = fallback_client
 
     async def complete_text(self, req: object) -> object:
-        """Pace then delegate; retry with exp-backoff on 503/429 transients."""
-        from memory_engine.domain.errors import LLMRateLimited, LLMUnavailable
+        """Pace then delegate; retry with exp-backoff on 503/429/timeout transients."""
+        from memory_engine.domain.errors import (
+            LLMRateLimited,
+            LLMTimeout,
+            LLMUnavailable,
+        )
 
         if self._delay_s > 0.0:
             await asyncio.sleep(self._delay_s)
@@ -200,7 +272,7 @@ class _PacedGateway:
             try:
                 # GeminiClient exposes .complete(), not .complete_text()
                 return await self._client.complete(req)  # type: ignore[attr-defined]
-            except (LLMUnavailable, LLMRateLimited) as exc:
+            except (LLMUnavailable, LLMRateLimited, LLMTimeout) as exc:
                 last_exc = exc
                 wait = self._delay_s * (2**attempt)
                 _logger.warning(
@@ -227,7 +299,11 @@ class _PacedGateway:
 
     async def complete_json(self, req: Any, schema: type[T]) -> T:
         """Pace then delegate JSON completion with backoff and schema validation."""
-        from memory_engine.domain.errors import LLMRateLimited, LLMUnavailable
+        from memory_engine.domain.errors import (
+            LLMRateLimited,
+            LLMTimeout,
+            LLMUnavailable,
+        )
         from memory_engine.ports.llm import LLMRequest
 
         if not getattr(req, 'json_mode', False):
@@ -251,24 +327,16 @@ class _PacedGateway:
                 raw_text = getattr(resp, 'text', '')
                 clean_text = _strip_code_fences(raw_text)
                 data = json.loads(clean_text)
-                if isinstance(data, list):
-                    data = {'facts': data}
-                if isinstance(data, dict) and 'facts' in data and isinstance(data['facts'], list):
-                    for f in data['facts']:
-                        if isinstance(f, dict):
-                            f.setdefault('confidence', 1.0)
-                            f.setdefault('subject_type', 'person')
-                            f.setdefault('object_type', 'literal')
-                            f.setdefault('is_retraction', False)
-                            f.setdefault('valid_from_text', None)
-                            f.setdefault('valid_to_text', None)
-                            f.setdefault('source_turn', 0)
+                data = _sanitize_facts_data(data)
+                if hasattr(schema_any, 'model_fields') and isinstance(data, dict):
+                    allowed_fields = set(schema_any.model_fields.keys())
+                    data = {k: v for k, v in data.items() if k in allowed_fields}
                 if hasattr(schema_any, 'model_validate'):
                     val_res: T = schema_any.model_validate(data)
                     return val_res
                 fb_inst: T = schema(**data)
                 return fb_inst
-            except (LLMUnavailable, LLMRateLimited) as exc:
+            except (LLMUnavailable, LLMRateLimited, LLMTimeout) as exc:
                 last_exc = exc
                 wait = self._delay_s * (2**attempt)
                 _logger.warning(
@@ -295,18 +363,10 @@ class _PacedGateway:
                 raw_text = getattr(fb_resp, 'text', '')
                 clean_text = _strip_code_fences(raw_text)
                 data = json.loads(clean_text)
-                if isinstance(data, list):
-                    data = {'facts': data}
-                if isinstance(data, dict) and 'facts' in data and isinstance(data['facts'], list):
-                    for f in data['facts']:
-                        if isinstance(f, dict):
-                            f.setdefault('confidence', 1.0)
-                            f.setdefault('subject_type', 'person')
-                            f.setdefault('object_type', 'literal')
-                            f.setdefault('is_retraction', False)
-                            f.setdefault('valid_from_text', None)
-                            f.setdefault('valid_to_text', None)
-                            f.setdefault('source_turn', 0)
+                data = _sanitize_facts_data(data)
+                if hasattr(schema_any, 'model_fields') and isinstance(data, dict):
+                    allowed_fields = set(schema_any.model_fields.keys())
+                    data = {k: v for k, v in data.items() if k in allowed_fields}
                 if hasattr(schema_any, 'model_validate'):
                     val_res_fb: T = schema_any.model_validate(data)
                     return val_res_fb
@@ -386,12 +446,16 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
         except Exception as err:
             _logger.warning('Could not connect to Postgres at %s: %s', db_url, err)
 
+    from memory_engine.ingest.canonicalizer import Canonicalizer
+
+    canonicalizer = Canonicalizer()
     clock = FixedClock(datetime(2024, 1, 1, tzinfo=UTC))
     extractor = FactExtractor(llm=paced_gw)  # type: ignore[arg-type]
     ingest_service = (
         IngestService(
             uows=uow_factory,
             extractor=extractor,
+            canonicalizer=canonicalizer,
             embedder=embedder,
             clock=clock,
             debounce_s=0.0,
@@ -434,6 +498,16 @@ async def _run_live_eval(args: argparse.Namespace) -> int:
         if pool is not None:
             await pool.close()
         return 2
+
+    if args.question_id:
+        questions = [q for q in questions if q.question_id == args.question_id]
+        if not questions:
+            sys.stderr.write(
+                f'Error: question_id {args.question_id!r} not found in {dataset_path}\n'
+            )
+            if pool is not None:
+                await pool.close()
+            return 2
 
     if args.limit:
         questions = questions[: args.limit]
@@ -560,6 +634,14 @@ async def run_eval_cli(args: argparse.Namespace) -> int:
     if not questions:
         sys.stderr.write(f'Error: no questions loaded from {dataset_path}\n')
         return 2
+
+    if args.question_id:
+        questions = [q for q in questions if q.question_id == args.question_id]
+        if not questions:
+            sys.stderr.write(
+                f'Error: question_id {args.question_id!r} not found in {dataset_path}\n'
+            )
+            return 2
 
     runner = LongMemEvalRunner(
         system_name=args.system,

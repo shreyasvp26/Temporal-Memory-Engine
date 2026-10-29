@@ -729,3 +729,84 @@ def test_cli_parsing_and_run(tmp_path: Path) -> None:
     assert (out_dir / 'report.json').exists()
     md_content = (out_dir / 'report.md').read_text(encoding='utf-8')
     assert 'LongMemEval Benchmark Report' in md_content
+
+
+@pytest.mark.asyncio
+async def test_paced_gateway_retries_on_llm_timeout() -> None:
+    from memory_engine.domain.errors import LLMTimeout
+    from memory_engine.ports.llm import LLMRequest
+
+    from eval.cli import _PacedGateway
+
+    mock_client = AsyncMock()
+    # First attempt raises LLMTimeout, second succeeds
+    mock_client.complete.side_effect = [
+        LLMTimeout('Gemini HTTP read timeout after 30s'),
+        LLMResponse(
+            text=json.dumps(
+                {
+                    'intent': 'open',
+                    'time_phrases': [],
+                    'entity_names': [],
+                    'predicates': [],
+                    'multi_hop': False,
+                }
+            ),
+            model='gemini-3.5-flash-lite',
+            provider='gemini',
+            prompt_tokens=10,
+            completion_tokens=10,
+            latency_ms=100.0,
+        ),
+    ]
+
+    gateway = _PacedGateway(client=mock_client, delay_s=0.0)
+    req = LLMRequest(
+        purpose='plan',
+        tier='fast',
+        messages=[],
+        prompt_version='v1',
+    )
+    resp = await gateway.complete_text(req)
+    assert cast('LLMResponse', resp).model == 'gemini-3.5-flash-lite'
+    assert mock_client.complete.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_paced_gateway_complete_json_strips_extra_fields() -> None:
+    from memory_engine.ports.llm import LLMRequest, PlannerLLMOutput
+
+    from eval.cli import _PacedGateway
+
+    mock_client = AsyncMock()
+    mock_client.complete.return_value = LLMResponse(
+        text=json.dumps(
+            {
+                'intent': 'open',
+                'time_phrases': ['today'],
+                'entity_names': ['Bob'],
+                'predicates': ['lives_in'],
+                'multi_hop': False,
+                'rationale': None,
+                'temporal_cues': ['extra_field_1'],
+                'entities': ['extra_field_2'],
+            }
+        ),
+        model='gemini-3.5-flash-lite',
+        provider='gemini',
+        prompt_tokens=10,
+        completion_tokens=10,
+        latency_ms=100.0,
+    )
+
+    gateway = _PacedGateway(client=mock_client, delay_s=0.0)
+    req = LLMRequest(
+        purpose='plan',
+        tier='fast',
+        messages=[],
+        prompt_version='v1',
+    )
+    result = await gateway.complete_json(req, PlannerLLMOutput)
+    assert result.intent.value == 'open'
+    assert result.time_phrases == ['today']
+    assert result.entity_names == ['Bob']

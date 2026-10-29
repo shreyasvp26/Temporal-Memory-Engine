@@ -1,0 +1,57 @@
+{
+  "benchmark_name": "LongMemEval",
+  "system_name": "full_bitemporal",
+  "baseline_name": null,
+  "total_questions": 1,
+  "overall_accuracy": 1.0,
+  "overall_token_f1": 0.13333333333333333,
+  "overall_exact_match": 0.0,
+  "abstention_accuracy": 1.0,
+  "category_metrics": {
+    "knowledge-update": {
+      "category": "knowledge-update",
+      "count": 1,
+      "accuracy": 1.0,
+      "token_f1": 0.13333333333333333,
+      "exact_match": 0.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "baseline_accuracy": null,
+      "baseline_token_f1": null,
+      "baseline_exact_match": null,
+      "paired_ci_diff": null,
+      "paired_ci_low": null,
+      "paired_ci_high": null
+    }
+  },
+  "paired_ci_accuracy": null,
+  "paired_ci_f1": null,
+  "latency_stats": {
+    "p50": 3407.3465829715133,
+    "p95": 3407.3465829715133,
+    "p99": 3407.3465829715133,
+    "mean": 3407.3465829715133
+  },
+  "baseline_latency_stats": null,
+  "item_results": [
+    {
+      "question_id": "ku_001",
+      "question_type": "knowledge-update",
+      "question": "What company does the user currently work for?",
+      "gold_answer": "Stripe",
+      "system_answer": "Based on the provided context, the user currently works for Stripe (valid from 2024-10-15 to present).",
+      "judge_correct": true,
+      "token_f1": 0.13333333333333333,
+      "exact_match": false,
+      "latency_ms": 3407.3465829715133,
+      "is_abstention": false,
+      "baseline_answer": null,
+      "baseline_judge_correct": null,
+      "baseline_token_f1": null,
+      "baseline_exact_match": null,
+      "baseline_latency_ms": null,
+      "error": null
+    }
+  ],
+  "metadata": {}
+}

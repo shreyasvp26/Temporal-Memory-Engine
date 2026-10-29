@@ -240,6 +240,105 @@ SEED_PREDICATES: tuple[Predicate, ...] = (
     ),
 )
 
+EXPANDED_SYNONYMS: dict[str, tuple[str, ...]] = {
+    'lives_in': ('relocated_to', 'staying_in'),
+    'job_title': (
+        'has_occupation',
+        'works_as',
+        'role_is',
+        'has_role',
+        'occupation',
+        'profession',
+        'title',
+        'position',
+    ),
+    'studies_at': ('studying_at', 'student_at'),
+    'has_name': ('named', 'name'),
+    'born_in': ('birthplace',),
+    'birthday': ('born_on', 'date_of_birth'),
+    'relationship_status': (
+        'married',
+        'married_to',
+        'spouse_of',
+        'dating',
+        'partner_of',
+        'partner',
+        'in_relationship_with',
+        'single',
+        'divorced',
+    ),
+    'owns': ('has_pet', 'pet_name', 'pet', 'cat_name', 'dog_name', 'owns_pet', 'possesses'),
+    'likes': ('fan_of',),
+    'dislikes': ('hates', 'detests'),
+    'prefers': (
+        'diet',
+        'eats',
+        'food_preference',
+        'dietary_preference',
+        'dietary',
+        'preference',
+        'preferences',
+        'favorite_food',
+        'favourite_food',
+    ),
+    'has_skill': (
+        'uses',
+        'uses_tool',
+        'codes_in',
+        'migrating_to',
+        'switched_to',
+        'uses_tech',
+        'tech_stack',
+        'programming_language',
+        'skilled_in',
+        'proficient_in',
+    ),
+    'friend_of': (
+        'works_with',
+        'reports_to',
+        'manages',
+        'colleague_of',
+        'colleague',
+        'coworker_of',
+        'coworker',
+        'teammate_of',
+    ),
+    'family_member': (),
+    'plans_to': (
+        'looking_for',
+        'planning_to',
+        'wants_to',
+        'signed_up_for',
+        'preparing_for',
+        'plans',
+        'intends_to',
+        'aims_to',
+        'hoping_to',
+        'going_to',
+    ),
+    'is_reading': ('reading', 'reads'),
+    'is_working_on': ('building', 'working_on', 'worked_on', 'developing', 'working'),
+    'attended': ('graduated_from', 'graduated', 'went_to', 'attended_event', 'attending'),
+    'visited': ('visited_place', 'visited_city'),
+    'bought': ('purchased', 'acquired'),
+    'decided': ('decided_to', 'chose'),
+    'met': ('met_with',),
+    'started': ('began', 'started_project', 'founded', 'created', 'initiated'),
+    'completed': (
+        'launched',
+        'finished',
+        'submitted',
+        'submitted_a_paper_to',
+        'submitted a paper to',
+        'completed_project',
+        'done_with',
+        'published',
+    ),
+    'traveled_to': ('flew_to', 'trip_to'),
+    'said_assistant': (),
+    'other': ('related_to', 'general'),
+}
+
 
 class StaticPredicateRegistry(PredicateRegistry):
     """In-memory predicate registry loaded from frozen seed data or custom predicate list."""
@@ -253,7 +352,13 @@ class StaticPredicateRegistry(PredicateRegistry):
             norm_name = p.name.strip().lower()
             self._by_name[norm_name] = p
             for s in p.synonyms:
-                self._by_synonym[s.strip().lower()] = p
+                clean_s = s.strip().lower()
+                self._by_synonym[clean_s] = p
+                self._by_synonym[clean_s.replace(' ', '_').replace('-', '_')] = p
+            for s in EXPANDED_SYNONYMS.get(norm_name, ()):
+                clean_s = s.strip().lower()
+                self._by_synonym[clean_s] = p
+                self._by_synonym[clean_s.replace(' ', '_').replace('-', '_')] = p
 
         self._other = self._by_name.get(
             'other',
@@ -263,38 +368,28 @@ class StaticPredicateRegistry(PredicateRegistry):
                 decay_class=DecayClass.NORMAL,
                 object_kind=ObjectKind.LITERAL,
                 template='{subject}: {object}',
-                synonyms=(),
+                synonyms=('related_to',),
             ),
         )
-        self._related_to = self._by_name.get(
-            'related_to',
-            Predicate(
-                name='related_to',
-                cardinality=Cardinality.MULTI,
-                decay_class=DecayClass.NORMAL,
-                object_kind=ObjectKind.LITERAL,
-                template='{subject} is related to {object}',
-                synonyms=(),
-            ),
-        )
+        self._related_to = self._other
 
     def resolve(self, name: str) -> Predicate:
         """Resolve a predicate name: exact match, then synonym, else fallback to 'other'."""
         norm = name.strip().lower()
         if norm in self._by_name:
             return self._by_name[norm]
+        norm_underscore = norm.replace(' ', '_').replace('-', '_')
+        if norm_underscore in self._by_name:
+            return self._by_name[norm_underscore]
         if norm in self._by_synonym:
             return self._by_synonym[norm]
+        if norm_underscore in self._by_synonym:
+            return self._by_synonym[norm_underscore]
         return self._other
 
     def lookup(self, name: str) -> Predicate:
-        """Resolve predicate by exact name or synonym, else fallback to 'related_to'."""
-        norm = name.strip().lower().replace(' ', '_').replace('-', '_')
-        if norm in self._by_name:
-            return self._by_name[norm]
-        if norm in self._by_synonym:
-            return self._by_synonym[norm]
-        return self._related_to
+        """Resolve predicate by exact name or synonym, else fallback to 'other'."""
+        return self.resolve(name)
 
     def get(self, name: str) -> Predicate:
         """Get a predicate by exact name; raises KeyError if not found."""

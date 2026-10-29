@@ -137,6 +137,67 @@ class _TokenBucket:
         self.blocked_until = max(self.blocked_until, blocked_until)
 
 
+def _sanitize_facts_data(data: Any) -> Any:
+    """Sanitize extraction facts data to handle LLM quirks like speaker vs subject."""
+    if isinstance(data, list):
+        data = {'facts': data}
+    if not isinstance(data, dict) or 'facts' not in data or not isinstance(data['facts'], list):
+        return data
+
+    from memory_engine.domain.models import ExtractedFact
+
+    allowed_fields = set(ExtractedFact.model_fields.keys())
+    cleaned_facts: list[dict[str, Any]] = []
+
+    for item in data['facts']:
+        if not isinstance(item, dict):
+            continue
+
+        item_dict = dict(item)
+
+        # If subject is missing or empty and speaker is present, rename speaker to subject
+        subj = item_dict.get('subject')
+        if (subj is None or not str(subj).strip()) and 'speaker' in item_dict:
+            item_dict['subject'] = str(item_dict.pop('speaker')).strip()
+        else:
+            item_dict.pop('speaker', None)
+
+        # Pop any unknown keys not in ExtractedFact
+        for k in list(item_dict.keys()):
+            if k not in allowed_fields:
+                item_dict.pop(k, None)
+
+        # Filter out if subject, predicate, object, or evidence_span is None or empty after
+        # stripping
+        is_valid = True
+        for field in ('subject', 'predicate', 'object', 'evidence_span'):
+            val = item_dict.get(field)
+            if val is None or not str(val).strip():
+                is_valid = False
+                break
+        if not is_valid:
+            continue
+
+        # Standard string clean and defaults
+        item_dict['subject'] = str(item_dict['subject']).strip()
+        item_dict['predicate'] = str(item_dict['predicate']).strip()
+        item_dict['object'] = str(item_dict['object']).strip()
+        item_dict['evidence_span'] = str(item_dict['evidence_span']).strip()
+
+        item_dict.setdefault('confidence', 1.0)
+        item_dict.setdefault('subject_type', 'person')
+        item_dict.setdefault('object_type', 'literal')
+        item_dict.setdefault('is_retraction', False)
+        item_dict.setdefault('valid_from_text', None)
+        item_dict.setdefault('valid_to_text', None)
+        item_dict.setdefault('source_turn', 0)
+
+        cleaned_facts.append(item_dict)
+
+    data['facts'] = cleaned_facts
+    return data
+
+
 class DefaultLLMGateway(LLMGateway):
     """Default multi-provider LLM gateway with fallback, rate limiting, and repair."""
 
@@ -388,7 +449,13 @@ class DefaultLLMGateway(LLMGateway):
         except json.JSONDecodeError as err:
             return None, f'JSON parse error: {err}'
 
+        data = _sanitize_facts_data(data)
+
         schema_obj: Any = schema
+        if hasattr(schema_obj, 'model_fields') and isinstance(data, dict):
+            allowed_fields = set(schema_obj.model_fields.keys())
+            data = {k: v for k, v in data.items() if k in allowed_fields}
+
         if hasattr(schema_obj, 'model_validate'):
             try:
                 validated = schema_obj.model_validate(data)
@@ -397,6 +464,8 @@ class DefaultLLMGateway(LLMGateway):
                 return None, f'Pydantic validation error: {err}'
 
         return cast('T', data), None
+
+    _parse_and_validate = _validate_json
 
     async def stream_text(self, req: LLMRequest) -> AsyncIterator[str]:
         """Stream completion text with fallback before the first yielded chunk."""

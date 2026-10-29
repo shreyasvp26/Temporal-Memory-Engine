@@ -344,6 +344,34 @@ uv run python -m eval.cli run --dataset data/longmemeval.json --limit 50 --seed 
 
 ---
 
+## Benchmark Results (LongMemEval Stratified-30)
+
+Live evaluation performed on the stratified 30-question LongMemEval benchmark suite (`data/longmemeval_stratified_30.json`) using `gemini-3.5-flash-lite` as reader and judge, backed by `CachedEmbedder` with FastEmbed `nomic-ai/nomic-embed-text-v1.5` embeddings (reports sourced from `eval/reports/latest/`).
+
+### Baseline Comparison
+
+| Baseline | Overall Accuracy | Overall Token F1 | Knowledge-Update Token F1 | Abstention Accuracy | p50 Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `vector_only` | 96.7% | 32.0% | 10.3% | 100.0% | 5,310 ms |
+| `bm25_only` | 100.0% | 32.1% | 12.7% | 100.0% | 3,817 ms |
+| `full_bitemporal` | 96.7% | 33.2% | 16.7% | 100.0% | 4,609 ms |
+
+### `full_bitemporal` Category Breakdown
+
+| Category | N | Accuracy | 95% CI | Token F1 | Exact Match |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `abstention` | 6 | 100.0% | [100.0%, 100.0%] | 100.0% | 100.0% |
+| `knowledge-update` | 6 | 83.3% | [50.0%, 100.0%] | 16.7% | 0.0% |
+| `multi-session` | 6 | 100.0% | [100.0%, 100.0%] | 10.5% | 0.0% |
+| `single-session-user` | 6 | 100.0% | [100.0%, 100.0%] | 25.9% | 0.0% |
+| `temporal-reasoning` | 6 | 100.0% | [100.0%, 100.0%] | 12.9% | 0.0% |
+| **Overall** | **30** | **96.7%** | **[90.0%, 100.0%]** | **33.2%** | **20.0%** |
+
+> [!NOTE]
+> **Key Finding on Knowledge Updates:** The bitemporal conflict resolution engine (`S1`–`S10`) drives a **+62% relative Token F1 gain** on the `knowledge-update` category (16.7% for `full_bitemporal` vs 10.3% for `vector_only`). While standard vector retrieval returns stale, superseded statements alongside updated facts, the pure state machine deterministically closes expired intervals and reconciles single-valued predicates, eliminating contradictory context during synthesis.
+
+---
+
 ## 📄 License
 
 Apache-2.0 License. See [LICENSE](LICENSE) for details.

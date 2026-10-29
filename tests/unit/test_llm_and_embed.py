@@ -458,6 +458,41 @@ async def test_gateway_json_strips_code_fences() -> None:
 
 
 @pytest.mark.asyncio
+async def test_gateway_json_strips_extra_top_level_fields() -> None:
+    # Model returns extra keys (e.g. temporal_cues, entities) not in PlannerLLMOutput schema
+    raw_json = json.dumps(
+        {
+            'intent': 'open',
+            'time_phrases': ['yesterday'],
+            'entity_names': ['Alice'],
+            'predicates': ['lives_in'],
+            'multi_hop': False,
+            'rationale': 'test',
+            'temporal_cues': ['extra_field_1'],
+            'entities': ['extra_field_2'],
+        }
+    )
+    groq = FakeClient('groq', [raw_json])
+    settings = Settings(llm_fast_chain='groq')
+
+    gateway = DefaultLLMGateway(
+        providers={'groq': groq},
+        settings=settings,
+    )
+
+    req = LLMRequest(
+        purpose='plan',
+        tier='fast',
+        messages=[ChatMessage(role='user', content='plan')],
+        prompt_version='v1',
+    )
+    result = await gateway.complete_json(req, PlannerLLMOutput)
+    assert result.intent == Intent.OPEN
+    assert result.time_phrases == ['yesterday']
+    assert result.entity_names == ['Alice']
+
+
+@pytest.mark.asyncio
 async def test_gateway_json_repair_retry_success() -> None:
     # 1st response: invalid JSON
     # 2nd response (repair call): valid JSON
@@ -699,3 +734,53 @@ async def test_cached_embedder_sqlite(tmp_path: Path) -> None:
     assert cached2.hits == 0
     await cached2.embed_documents(['persistent text'])
     assert inner.doc_call_count == 2  # Re-embedded after clear
+
+
+def test_sanitize_facts_data_speaker_and_malformed_items() -> None:
+    from memory_engine.domain.models import ExtractionResult
+    from memory_engine.llm.gateway import _sanitize_facts_data
+
+    raw_data = {
+        'facts': [
+            # 1. speaker without subject -> subject = speaker
+            {
+                'speaker': 'user',
+                'predicate': 'lives_in',
+                'object': 'Seattle',
+                'evidence_span': 'I live in Seattle',
+                'extra_key': 'ignore_me',
+            },
+            # 2. speaker with subject -> pop speaker and extra
+            {
+                'subject': 'Alice',
+                'speaker': 'user',
+                'predicate': 'likes',
+                'object': 'coffee',
+                'evidence_span': 'Alice likes coffee',
+            },
+            # 3. empty object -> filtered out
+            {
+                'subject': 'Bob',
+                'predicate': 'works_at',
+                'object': '   ',
+                'evidence_span': 'Bob works at',
+            },
+            # 4. None evidence_span -> filtered out
+            {
+                'subject': 'Charlie',
+                'predicate': 'owns',
+                'object': 'a dog',
+                'evidence_span': None,
+            },
+            # 5. Non-dict -> filtered out
+            'not_a_dict',
+        ]
+    }
+
+    sanitized = _sanitize_facts_data(raw_data)
+    validated = ExtractionResult.model_validate(sanitized)
+    assert len(validated.facts) == 2
+    assert validated.facts[0].subject == 'user'
+    assert validated.facts[0].object == 'Seattle'
+    assert validated.facts[1].subject == 'Alice'
+    assert validated.facts[1].object == 'coffee'
