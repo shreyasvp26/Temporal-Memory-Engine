@@ -42,6 +42,7 @@ from .schemas import (
     NoteCreateRequest,
     NoteCreateResponse,
     ReadyResponse,
+    RetrievalTelemetry,
     fact_to_detail,
     fact_to_view,
     job_to_view,
@@ -131,6 +132,11 @@ async def chat_turn(
         client_message_id=body.client_message_id,
     )
     result: ChatTurnResult = await service.respond(user_id, svc_req)
+    t_dict = result.telemetry or result.trace
+    telemetry_view: RetrievalTelemetry | None = None
+    if t_dict:
+        telemetry_view = RetrievalTelemetry(**t_dict)
+
     return Response(
         content=ChatResponse(
             conversation_id=result.conversation_id,
@@ -141,6 +147,8 @@ async def chat_turn(
             cited_source_ids=[UUID(str(sid)) for sid in result.cited_source_ids],
             statement_only=result.statement_only,
             abstained=result.abstained,
+            trace=telemetry_view,
+            telemetry=telemetry_view,
         ).model_dump_json(),
         media_type='application/json',
     )
@@ -387,3 +395,12 @@ async def purge_profile(
     """Permanently delete all user memories, profile, and history (GDPR right to be forgotten)."""
     count = await lifecycle.purge_user(user_id)
     return {'status': 'purged', 'purged_rows': count}
+
+
+# ---------------------------------------------------------------------------
+# Workbench Dev & Helper Endpoints
+# ---------------------------------------------------------------------------
+
+from .dev_routes import dev_router  # noqa: E402
+
+api_router.include_router(dev_router)

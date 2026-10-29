@@ -20,6 +20,26 @@ class ChatRequest(BaseModel):
     client_message_id: str | None = Field(default=None, max_length=64)
 
 
+class RetrievalTelemetry(BaseModel):
+    """Retrieval trace and telemetry metadata for workbench inspection."""
+
+    model_config = ConfigDict(extra='forbid', frozen=True)
+
+    intent: str
+    filter_mode: str
+    as_of: str | None = None
+    time_range: list[str | None] | None = None
+    entity_hints: list[str] = Field(default_factory=list)
+    predicate_hints: list[str] = Field(default_factory=list)
+    lane_counts: dict[str, int] = Field(default_factory=dict)
+    degraded_lanes: list[str] = Field(default_factory=list)
+    abstained: bool = False
+    abstention_reason: str | None = None
+    context_text: str = ''
+    token_count: int = 0
+    latency_ms: float = 0.0
+
+
 class ChatResponse(BaseModel):
     """Non-streaming chat turn response."""
 
@@ -33,6 +53,8 @@ class ChatResponse(BaseModel):
     cited_source_ids: list[UUID] = Field(default_factory=list)
     statement_only: bool = False
     abstained: bool = False
+    trace: RetrievalTelemetry | None = None
+    telemetry: RetrievalTelemetry | None = None
 
 
 class NoteCreateRequest(BaseModel):

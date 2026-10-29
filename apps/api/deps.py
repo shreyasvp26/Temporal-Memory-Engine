@@ -9,6 +9,7 @@ from memory_engine.domain.clock import Clock
 from memory_engine.domain.errors import InvariantViolation
 from memory_engine.ingest.service import IngestService
 from memory_engine.lifecycle.service import MemoryLifecycleService
+from memory_engine.ports.embed import Embedder
 from memory_engine.ports.uow import UnitOfWorkFactory
 from memory_engine.retrieve.chat_service import ChatService
 from memory_engine.retrieve.orchestrator import RetrievalOrchestrator
@@ -30,6 +31,7 @@ class AppContainer:
     lifecycle: MemoryLifecycleService
     rate_limiter: RateLimiter | None = None
     jwt_verifier: JwtVerifier | None = None
+    embedder: Embedder | None = None
 
 
 def get_container(request: Request) -> AppContainer:
@@ -80,3 +82,8 @@ def get_lifecycle_service(
 ) -> MemoryLifecycleService:
     """FastAPI dependency for MemoryLifecycleService."""
     return container.lifecycle
+
+
+def get_embedder(container: ContainerDep) -> Embedder | None:
+    """FastAPI dependency for Embedder."""
+    return container.embedder

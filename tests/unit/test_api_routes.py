@@ -291,6 +291,21 @@ class FakeChatService:
         req: ServiceChatRequest,
     ) -> ChatTurnResult:
         self.last_message = req.message
+        telem = {
+            'intent': 'current_state',
+            'filter_mode': 'current',
+            'as_of': None,
+            'time_range': None,
+            'entity_hints': ['User'],
+            'predicate_hints': ['lives_in'],
+            'lane_counts': {'vector_facts': 1},
+            'degraded_lanes': [],
+            'abstained': False,
+            'abstention_reason': None,
+            'context_text': '[F1] User lives in Delhi',
+            'token_count': 12,
+            'latency_ms': 15.0,
+        }
         return ChatTurnResult(
             conversation_id=req.conversation_id or uuid4(),
             user_message_id=uuid4(),
@@ -300,6 +315,8 @@ class FakeChatService:
             cited_source_ids=[SourceId(uuid4())],
             statement_only=False,
             abstained=False,
+            telemetry=telem,
+            trace=telem,
         )
 
     async def stream_respond(
@@ -311,12 +328,27 @@ class FakeChatService:
         asst_id = uuid4()
         f_id = FactId(uuid4())
         s_id = SourceId(uuid4())
+        telem = {
+            'intent': 'current_state',
+            'filter_mode': 'current',
+            'as_of': None,
+            'time_range': None,
+            'entity_hints': ['User'],
+            'predicate_hints': ['lives_in'],
+            'lane_counts': {'vector_facts': 1},
+            'degraded_lanes': [],
+            'abstained': False,
+            'abstention_reason': None,
+            'context_text': '[F1] User lives in Delhi',
+            'token_count': 12,
+            'latency_ms': 15.0,
+        }
         yield ChatStreamEvent.plan({'intent': 'QUESTION'})
         yield ChatStreamEvent.trace([{'label': 'F1', 'id': str(f_id)}])
         yield ChatStreamEvent.token('Hello ')
         yield ChatStreamEvent.token('world!')
         yield ChatStreamEvent.citations([f_id], [s_id])
-        yield ChatStreamEvent.done(asst_id, partial=False)
+        yield ChatStreamEvent.done(asst_id, partial=False, telemetry=telem)
 
 
 class FakeIngestService:

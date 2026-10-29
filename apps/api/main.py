@@ -164,9 +164,19 @@ def create_app(
             uows = PostgresUnitOfWorkFactory(pool)
             canonicalizer = Canonicalizer()
             lifecycle = MemoryLifecycleService(uows=uows, clock=clock, canonicalizer=canonicalizer)
-            ingest = IngestService(uows=uows, clock=clock, canonicalizer=canonicalizer)
+            embedder = None
+            try:
+                from memory_engine.embed.fastembed_adapter import FastEmbedAdapter
+
+                embedder = FastEmbedAdapter()
+            except Exception:
+                embedder = None
+
+            ingest = IngestService(
+                uows=uows, clock=clock, canonicalizer=canonicalizer, embedder=embedder
+            )
             retrieval = RetrievalOrchestrator(
-                uows=uows, clock=clock, cfg=effective_settings.retrieval
+                uows=uows, clock=clock, cfg=effective_settings.retrieval, embedder=embedder
             )
             chat = ChatService(orchestrator=retrieval, clock=clock, uows=uows)
             rate_limiter = RateLimiter(
@@ -190,6 +200,7 @@ def create_app(
                 lifecycle=lifecycle,
                 rate_limiter=rate_limiter,
                 jwt_verifier=jwt_verifier,
+                embedder=embedder,
             )
 
         yield

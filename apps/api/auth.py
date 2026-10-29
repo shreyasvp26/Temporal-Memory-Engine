@@ -53,8 +53,8 @@ class JwtVerifier:
                 key = self.cfg.secret
                 algorithms = ['HS256', 'HS384', 'HS512']
             else:
-                # If no secret or JWKS configured and in dev/test, decode unverified or reject
-                if self.env in ('dev', 'test'):
+                # If no secret or JWKS configured and in dev/test/local, decode unverified or reject
+                if self.env in ('dev', 'test', 'local'):
                     key = ''
                     algorithms = ['HS256', 'none']
                 else:
@@ -68,6 +68,7 @@ class JwtVerifier:
                 'leeway': 30,
                 'options': {
                     'verify_exp': True,
+                    'verify_iat': False,
                     'verify_aud': bool(self.cfg.audience),
                     'verify_signature': bool(key or self._jwks_client is not None),
                 },
@@ -114,9 +115,9 @@ async def get_current_user(request: Request) -> UserId:
         else 'dev'
     )
 
-    # 1. Dev / test mode bypass header
+    # 1. Dev / test / local mode bypass header
     debug_user_id = request.headers.get('x-debug-user-id')
-    if debug_user_id and env in ('dev', 'test'):
+    if debug_user_id and env in ('dev', 'test', 'local'):
         try:
             uid = UserId(UUID(debug_user_id.strip()))
             bind_context(user_id=uid)

@@ -21,9 +21,9 @@ from memory_engine.domain.ids import FactId, SourceId, UserId
 from memory_engine.ingest.gate import IngestGate
 from memory_engine.ingest.service import IngestService
 from memory_engine.ports.llm import ChatMessage, LLMGateway, LLMRequest
-from memory_engine.ports.repositories import NewMessage
+from memory_engine.ports.repositories import NewMessage, TemporalFilter
 from memory_engine.ports.uow import UnitOfWorkFactory
-from memory_engine.retrieve.assembler import AssembledContext
+from memory_engine.retrieve.assembler import AssembledContext, TokenCounter
 from memory_engine.retrieve.orchestrator import RetrievalOrchestrator, RetrievalResult
 from memory_engine.retrieve.planner.rules import QueryPlan
 
@@ -33,6 +33,7 @@ __all__ = [
     'ChatStreamEvent',
     'ChatTurnResult',
     'SYNTH_SYSTEM_PROMPT',
+    'build_retrieval_telemetry',
     'parse_citations',
 ]
 
@@ -89,6 +90,8 @@ class ChatTurnResult:
     error: str | None = None
     statement_only: bool = False
     abstained: bool = False
+    telemetry: dict[str, Any] | None = None
+    trace: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,14 +140,25 @@ class ChatStreamEvent:
         )
 
     @classmethod
-    def done(cls, assistant_message_id: UUID, partial: bool = False) -> 'ChatStreamEvent':
+    def done(
+        cls,
+        assistant_message_id: UUID,
+        partial: bool = False,
+        telemetry: dict[str, Any] | None = None,
+        trace: dict[str, Any] | None = None,
+    ) -> 'ChatStreamEvent':
         """Construct a done SSE event."""
+        payload: dict[str, Any] = {
+            'assistant_message_id': str(assistant_message_id),
+            'partial': partial,
+        }
+        meta = telemetry if telemetry is not None else trace
+        if meta is not None:
+            payload['telemetry'] = meta
+            payload['trace'] = meta
         return cls(
             event='done',
-            data={
-                'assistant_message_id': str(assistant_message_id),
-                'partial': partial,
-            },
+            data=payload,
         )
 
     @classmethod
@@ -252,6 +266,79 @@ def parse_citations(
     return cited_fact_ids, cited_source_ids
 
 
+def build_retrieval_telemetry(
+    retrieval_res: RetrievalResult | None,
+    latency_ms: float = 0.0,
+    statement_only: bool = False,
+) -> dict[str, Any]:
+    """Construct rich retrieval telemetry dict per LLD Section 11.4."""
+    if statement_only or retrieval_res is None:
+        return {
+            'intent': 'statement_only',
+            'filter_mode': 'none',
+            'as_of': None,
+            'time_range': None,
+            'entity_hints': [],
+            'predicate_hints': [],
+            'lane_counts': {},
+            'degraded_lanes': [],
+            'abstained': False,
+            'abstention_reason': None,
+            'context_text': '',
+            'token_count': 0,
+            'latency_ms': latency_ms,
+        }
+
+    plan = retrieval_res.plan
+    flt = TemporalFilter.from_plan(plan)
+    ctx_text = (
+        getattr(retrieval_res.context, 'formatted_block', None)
+        or getattr(retrieval_res.context, 'text', '')
+        or ''
+    )
+    token_cnt = TokenCounter().count(ctx_text)
+
+    intent_str = plan.intent.value if hasattr(plan.intent, 'value') else str(plan.intent)
+    filter_mode_str = flt.mode.value if hasattr(flt.mode, 'value') else str(flt.mode)
+
+    as_of_str = plan.as_of.isoformat() if plan.as_of is not None else None
+    time_range_list: list[str | None] | None = None
+    if plan.time_range is not None:
+        time_range_list = [
+            plan.time_range.start.isoformat() if plan.time_range.start is not None else None,
+            plan.time_range.end.isoformat() if plan.time_range.end is not None else None,
+        ]
+
+    entity_hints = list(getattr(plan, 'entity_names', ()))
+    predicate_hints = list(getattr(plan, 'predicates', ()))
+    lane_counts = dict(getattr(retrieval_res, 'lane_counts', {}))
+    degraded_lanes = list(getattr(retrieval_res, 'degraded_lanes', []))
+    abstained = bool(
+        retrieval_res.abstention.should_abstain if hasattr(retrieval_res, 'abstention') else False
+    )
+    abstention_reason = (
+        getattr(retrieval_res.abstention, 'reason', None)
+        if hasattr(retrieval_res, 'abstention')
+        else None
+    )
+
+    return {
+        'intent': intent_str,
+        'filter_mode': filter_mode_str,
+        'as_of': as_of_str,
+        'time_range': time_range_list,
+        'entity_hints': entity_hints,
+        'predicate_hints': predicate_hints,
+        'lane_counts': lane_counts,
+        'degraded_lanes': degraded_lanes,
+        'abstained': abstained,
+        'abstention_reason': abstention_reason,
+        'context_text': ctx_text,
+        'token_count': token_cnt,
+        'latency_ms': latency_ms,
+    }
+
+
 class ChatService:
     """Coordinates the chat conversational use-case per LLD Section 9.1 & 9.6-9.7."""
 
@@ -333,6 +420,7 @@ class ChatService:
         request: ChatRequest | None = None,
     ) -> ChatTurnResult:
         """Execute end-to-end chat turn returning complete ChatTurnResult."""
+        t0 = time.perf_counter()
         uid, req = self._resolve_args(user_id_or_req, request)
         now = self.clock.now()
         question_ts = self._resolve_question_ts(req, now)
@@ -387,12 +475,17 @@ class ChatService:
                     source_ts=now,
                     message_id=assistant_message_id,
                 )
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            telem = build_retrieval_telemetry(None, latency_ms=latency_ms, statement_only=True)
             return ChatTurnResult(
                 conversation_id=conversation_id,
                 user_message_id=user_message_id,
                 assistant_message_id=assistant_message_id,
                 content=ack_text,
                 statement_only=True,
+                latency_ms=latency_ms,
+                telemetry=telem,
+                trace=telem,
             )
 
         # 3. Retrieve context
@@ -435,6 +528,8 @@ class ChatService:
                     source_ts=now,
                     message_id=assistant_message_id,
                 )
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            telem = build_retrieval_telemetry(retrieval_res, latency_ms=latency_ms)
             return ChatTurnResult(
                 conversation_id=conversation_id,
                 user_message_id=user_message_id,
@@ -443,6 +538,9 @@ class ChatService:
                 plan=retrieval_res.plan,
                 traces=traces_list,
                 abstained=True,
+                latency_ms=latency_ms,
+                telemetry=telem,
+                trace=telem,
             )
 
         # 5. LLM Synthesis
@@ -464,9 +562,9 @@ class ChatService:
             priority='interactive',
         )
 
-        t0 = time.perf_counter()
         llm_resp = await self.llm.complete_text(llm_req)
         latency_ms = (time.perf_counter() - t0) * 1000.0
+        telem = build_retrieval_telemetry(retrieval_res, latency_ms=latency_ms)
 
         cited_facts, cited_sources = parse_citations(llm_resp.text, retrieval_res.context)
         assistant_message_id = uuid4()
@@ -480,6 +578,7 @@ class ChatService:
             'cited_fact_ids': [str(f) for f in cited_facts],
             'cited_source_ids': [str(s) for s in cited_sources],
             'latency_ms': latency_ms,
+            'telemetry': telem,
         }
 
         async with self.uows.for_user(uid) as uow:
@@ -523,6 +622,8 @@ class ChatService:
             plan=retrieval_res.plan,
             traces=traces_list,
             latency_ms=latency_ms,
+            telemetry=telem,
+            trace=telem,
         )
 
     async def stream_respond(
@@ -531,6 +632,7 @@ class ChatService:
         request: ChatRequest | None = None,
     ) -> AsyncIterator[ChatStreamEvent]:
         """Stream chat turn events (plan, trace, token, citations, done, error)."""
+        t0 = time.perf_counter()
         uid, req = self._resolve_args(user_id_or_req, request)
         now = self.clock.now()
         question_ts = self._resolve_question_ts(req, now)
@@ -566,9 +668,11 @@ class ChatService:
         # 2. Statement-only bypass
         if self.gate.is_statement_only(req.message):
             ack_text = DEFAULT_STATEMENT_ACK
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            telem = build_retrieval_telemetry(None, latency_ms=latency_ms, statement_only=True)
             yield ChatStreamEvent.plan({'statement_only': True})
             yield ChatStreamEvent.token(ack_text)
-            yield ChatStreamEvent.done(assistant_message_id, partial=False)
+            yield ChatStreamEvent.done(assistant_message_id, partial=False, telemetry=telem)
 
             async with self.uows.for_user(uid) as uow:
                 await uow.messages.insert(
@@ -613,8 +717,10 @@ class ChatService:
         # 4. Abstention short-circuit
         if retrieval_res.abstention.should_abstain:
             canned = retrieval_res.abstention.canned_response
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            telem = build_retrieval_telemetry(retrieval_res, latency_ms=latency_ms)
             yield ChatStreamEvent.token(canned)
-            yield ChatStreamEvent.done(assistant_message_id, partial=False)
+            yield ChatStreamEvent.done(assistant_message_id, partial=False, telemetry=telem)
 
             async with self.uows.for_user(uid) as uow:
                 await uow.messages.insert(
@@ -624,7 +730,7 @@ class ChatService:
                         role=Role.ASSISTANT,
                         content=canned,
                         partial=False,
-                        trace={'traces': traces_list},
+                        trace={'traces': traces_list, 'telemetry': telem},
                     )
                 )
                 await self.ingestion.enqueue_turn(
@@ -658,7 +764,6 @@ class ChatService:
         )
 
         tokens: list[str] = []
-        t0 = time.perf_counter()
         stream_failed = False
         err_msg = ''
 
@@ -680,12 +785,13 @@ class ChatService:
         full_text = ''.join(tokens)
 
         cited_facts, cited_sources = parse_citations(full_text, retrieval_res.context)
+        telem = build_retrieval_telemetry(retrieval_res, latency_ms=latency_ms)
 
         if not stream_failed:
             yield ChatStreamEvent.citations(cited_facts, cited_sources)
-            yield ChatStreamEvent.done(assistant_message_id, partial=False)
+            yield ChatStreamEvent.done(assistant_message_id, partial=False, telemetry=telem)
         else:
-            yield ChatStreamEvent.done(assistant_message_id, partial=True)
+            yield ChatStreamEvent.done(assistant_message_id, partial=True, telemetry=telem)
 
         trace_payload = {
             'plan': (
